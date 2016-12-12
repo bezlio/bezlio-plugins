@@ -1,0 +1,21 @@
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\RSS.dll
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\RSS.pdb
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\Bezlio Remote Data Broker Library.dll
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\Newtonsoft.Json.dll
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\System.Data.SQLite.dll
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\Microsoft.ServiceBus.dll
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\Bezlio Remote Data Broker Library.pdb
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\Newtonsoft.Json.xml
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\System.Data.SQLite.xml
+C:\src\bezlio\bezlio-rdb\RSS Plugin\bin\x86\Debug\Microsoft.ServiceBus.xml
+C:\src\bezlio\bezlio-rdb\RSS Plugin\obj\x86\Debug\RSS Plugin.csprojResolveAssemblyReference.cache
+C:\src\bezlio\bezlio-rdb\RSS Plugin\obj\x86\Debug\RSS.dll
+C:\src\bezlio\bezlio-rdb\RSS Plugin\obj\x86\Debug\RSS.pdb
+C:\src\bezlio-plugins\Plugins\RSS\bin\x86\Debug\RSS.dll
+C:\src\bezlio-plugins\Plugins\RSS\bin\x86\Debug\RSS.pdb
+C:\src\bezlio-plugins\Plugins\RSS\bin\x86\Debug\Bezlio Remote Data Broker Library.dll
+C:\src\bezlio-plugins\Plugins\RSS\obj\x86\Debug\RSS Plugin.csprojResolveAssemblyReference.cache
+C:\src\bezlio-plugins\Plugins\RSS\obj\x86\Debug\RSS.dll
+C:\src\bezlio-plugins\Plugins\RSS\obj\x86\Debug\RSS.pdb
+c:\src\bezlio-plugins\Plugins\RSS\bin\x86\Debug\Newtonsoft.Json.dll
+c:\src\bezlio-plugins\Plugins\RSS\bin\x86\Debug\Newtonsoft.Json.xml

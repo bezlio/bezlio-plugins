@@ -1,0 +1,27 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="bezlio.plugins.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="connections" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">
+                  [
+                  {
+                  'connectionName': 'Epicor 905 Live',
+                  'appServerUrl': 'AppServerDC://SL-EPICOR:9401',
+                  'userName': 'manager',
+                  'password': 'manager'
+                  },
+                  {
+                  'connectionName': 'Epicor 905 Training',
+                  'appServerUrl': 'AppServerDC://SL-EPICOR:9411',
+                  'userName': 'manager',
+                  'password': 'manager'
+                  }
+                  ]
+                </Value>
+    </Setting>
+    <Setting Name="epicorClientPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\Epicor\Epicor905\Client\</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
