@@ -33,7 +33,7 @@ namespace bezlio.rdb.plugins
 
             model.Context = "Location name where .SQL files are stored.";
             model.Connection = "The name of the SQL Server connection.";
-            model.QueryName = "The SQL query filename to execute.";
+            model.QueryName = "The SQL query filename or Stored Procedure name to execute.";
             model.Parameters = new List<KeyValuePair<string, string>>();
             model.Parameters.Add(new KeyValuePair<string, string>("CustomerId", "102"));         
 
@@ -96,7 +96,7 @@ namespace bezlio.rdb.plugins
 
                 //WriteDebugLog("Connection Received");
 
-                DataTable dtResponse = await executeQuery(sqlConn, sql);
+                DataTable dtResponse = await executeQuery(sqlConn, sql, null);
 
                 //WriteDebugLog("Query Executed");
 
@@ -169,7 +169,7 @@ namespace bezlio.rdb.plugins
 
                 //WriteDebugLog("Connection Received");
 
-                int rowsAffected = await executeNonQuery(sqlConn, sql);
+                int rowsAffected = await executeNonQuery(sqlConn, sql, null);
 
                 //WriteDebugLog("Query Executed");
 
@@ -187,6 +187,93 @@ namespace bezlio.rdb.plugins
             }
 
             // Return our response
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> ExecuteStoredProcedure(RemoteDataBrokerRequest rdbRequest)
+        {
+            SQLServerDataModel request = JsonConvert.DeserializeObject<SQLServerDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = getResponseForRequest(rdbRequest);
+
+            try
+            {
+                // Deserialize the values from Settings
+                List<SqlConnectionInfo> connections = getSqlConnections();
+                string sql = request.QueryName;
+
+                // Locate the connection entry specified
+                SqlConnectionInfo connection = connections.Where((c) => c.ConnectionName.Equals(request.Connection)).FirstOrDefault();
+
+                // Now obtain a SQL connection
+                object sqlConn = getConnection("SQL Server"
+                            , connection.ServerAddress
+                            , connection.DatabaseName
+                            , connection.UserName
+                            , connection.Password);
+
+                DataTable dtResponse = await executeQuery(sqlConn, sql, request.Parameters);
+                response.Data = JsonConvert.SerializeObject(dtResponse);
+
+                sqlConn = null;
+            }
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+            }
+
+            // Return our response
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> ExecuteStoredProcedureNonQuery(RemoteDataBrokerRequest rdbRequest)
+        {
+            SQLServerDataModel request = JsonConvert.DeserializeObject<SQLServerDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = getResponseForRequest(rdbRequest);
+
+            try
+            {
+                // Deserialize the values from Settings
+                List<SqlConnectionInfo> connections = getSqlConnections();
+                string sql = request.QueryName;
+
+                // Locate the connection entry specified
+                SqlConnectionInfo connection = connections.Where((c) => c.ConnectionName.Equals(request.Connection)).FirstOrDefault();
+
+                // Now obtain a SQL connection
+                object sqlConn = getConnection("SQL Server"
+                            , connection.ServerAddress
+                            , connection.DatabaseName
+                            , connection.UserName
+                            , connection.Password);
+
+                int rowsAffected = await executeNonQuery(sqlConn, sql, request.Parameters);
+                response.Data = JsonConvert.SerializeObject(rowsAffected);
+
+                sqlConn = null;
+            }
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+            }
+
+            // Return our response
+            return response;
+        }
+
+        private static RemoteDataBrokerResponse getResponseForRequest(RemoteDataBrokerRequest rdbRequest)
+        {
+            // Declare the response object
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
             return response;
         }
 
@@ -292,7 +379,7 @@ namespace bezlio.rdb.plugins
 
         #pragma warning disable 1998
         private async static Task<DataTable> executeQuery(object _connection,
-                                    string _sql)
+                                    string _sql, List<KeyValuePair<string, string>> spParams)
         {
             // TODO: Make this actually async
             object oCommand;
@@ -303,8 +390,16 @@ namespace bezlio.rdb.plugins
             {
                 case "SqlConnection":
                     oCommand = getCommand("SQL Server");
-                    using (((SqlCommand)oCommand).Connection = (SqlConnection)_connection) {
-                        ((SqlCommand)oCommand).CommandText = _sql;
+                    SqlCommand command = (SqlCommand)oCommand;
+
+                    using (command.Connection = (SqlConnection)_connection) {
+                        if (spParams != null && spParams.Count > 0)
+                        {
+                            command.CommandType = CommandType.StoredProcedure;
+                            FillSPParameters(ref command, spParams);
+                        }
+
+                        command.CommandText = _sql;
                         oAdapter = getAdapter("SQL Server", oCommand);                  
                         ((SqlDataAdapter)oAdapter).Fill(dt);
                         //((SqlCommand)oCommand).Connection.Close();
@@ -320,7 +415,7 @@ namespace bezlio.rdb.plugins
         }
 
         private async static Task<int> executeNonQuery(object _connection,
-                                   string _sql)
+                                   string _sql, List<KeyValuePair<string, string>> spParams)
         {
             // TODO: Make this actually async
             object oCommand;
@@ -330,10 +425,18 @@ namespace bezlio.rdb.plugins
             {
                 case "SqlConnection":
                     oCommand = getCommand("SQL Server");
-                    using (((SqlCommand)oCommand).Connection = (SqlConnection)_connection)
+                    SqlCommand command = (SqlCommand)oCommand;
+
+                    using (command.Connection = (SqlConnection)_connection)
                     {
-                        ((SqlCommand)oCommand).CommandText = _sql;
-                        (((SqlCommand)oCommand).Connection).Open();
+                        if (spParams != null && spParams.Count > 0)
+                        {
+                            command.CommandType = CommandType.StoredProcedure;
+                            FillSPParameters(ref command, spParams);
+                        }
+
+                        command.CommandText = _sql;
+                        command.Connection.Open();
                         intRowsAffected = ((SqlCommand)oCommand).ExecuteNonQuery();
                     }
                     break;
@@ -347,6 +450,29 @@ namespace bezlio.rdb.plugins
             foreach (var parameter in parameters)
             {
                 query = query.Replace('{' + parameter.Key + '}', parameter.Value.ToString().Replace("'", "''"));
+            }
+        }
+
+        private static void FillSPParameters(ref SqlCommand command, List<KeyValuePair<string, string>> parameters)
+        {
+            foreach (var parameter in parameters)
+            {
+                string value = parameter.Value.ToString().Replace("'", "''");
+                double number;
+                SqlParameter param;
+
+                if (!(value.StartsWith("\"") && value.EndsWith("\"")) && double.TryParse(value, out number))
+                {
+                    param = new SqlParameter(parameter.Key, number);
+                    param.DbType = DbType.Double;
+                } else
+                {
+                    param = new SqlParameter(parameter.Key, value);
+                    param.DbType = DbType.String;
+                }            
+
+                param.Direction = ParameterDirection.Input;
+                command.Parameters.Add(param);
             }
         }
 #pragma warning restore 1998
