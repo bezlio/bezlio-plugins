@@ -11,7 +11,7 @@ This repository holds each of the open source plugins for Bezlio.  Many of these
 
 This plugin is intended to show you how to create a plugin.  It currently just takes the request data and mirrors it right back as a response.
 
-* [Epicor 10](Plugins/Epicor10/README.md)
+* [Epicor 10](Plugins/Epicor10/)
 
 Allows you to execute any of the Epicor 10 / 10.1 Business Objects, so anything you can do in the full client you can do with this plugin.  All of the Epicor BO files are accessed via .Net reflection, making this plugin patch-level independent and forward-compatible so long as Epicor does not change the naming conventions for DLLs.
 
