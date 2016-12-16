@@ -1,0 +1,20 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="bezlio.rdb.plugins.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="connections" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">
+                  [
+                  {
+                  'connectionName': 'Visual712',
+                  'Instance': 'VMFG',
+                  'userName': 'SYSADM',
+                  'password': 'SYSADM'
+                  }
+                  ]
+                
+
+</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
