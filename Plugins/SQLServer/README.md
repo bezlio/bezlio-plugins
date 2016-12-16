@@ -40,7 +40,7 @@ SELECT * FROM Demo
 
 *Selecting specific rows from a table named Demo*
 ```
-SELECT * FROM Demo WHERE MyField = 'XYZ';
+SELECT * FROM Demo WHERE MyField = 'XYZ'
 ```
 
 *Defining an update statement for a table named Demo that allows specific fields to be updated with values that will be passed through from a Bezl*
