@@ -15,7 +15,8 @@ In order to configure this plugin you will need to edit the Epicor10.dll.config 
 ## Usage
 Within Bezlio, this plugin can be used to call any Epicor BO method.  Using Javascript, here are a few examples:
 
-``` Execute a BAQ Named 'MyTestBAQ'
+*Execute a BAQ Named 'MyTestBAQ'*
+``` 
 bezl.dataService.add(
   'MyBAQResults'
   ,'brdb'
@@ -30,7 +31,8 @@ bezl.dataService.add(
   , 0);
 ```
 
-``` Perform a GetByID using the PO Business Object
+*Perform a GetByID using the PO Business Object*
+```
 bezl.dataService.add(
     'PO'
     ,'brdb'
@@ -47,7 +49,8 @@ bezl.dataService.add(
     ,0);
 ```
 
-``` Perform an UpdateExt using the PO Business Object (with the data from the previous GetByID example)
+*Perform an UpdateExt using the PO Business Object (with the data from the previous GetByID example)*
+``` 
 bezl.dataService.add(
   'Update'
   , 'brdb'
