@@ -12,8 +12,19 @@ In order to configure this plugin you will need to edit the Epicor905.dll.config
 * The user name and password must be for a valid Epicor user account.
 * The 'epicorClientPath' section (which starts with <setting name="epicorClientPath" serializeAs="String"> and ends with </setting>) provides the plugin with a path to where your Epicor client is installed.  This can be either a local path or a UNC path, but if it is the later be aware the Bezlio Remote Data Broker service will need to be run as a user that has permissions to that share.
 
+## Methods
+### ExecuteBOMethod
+This method can execute any Epicor BO method.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* BOName - The base name of the Epicor business object (for example 'PO').
+* BOMethodName - The name of the BO method to execute (for example 'UpdateExt').
+* Parameters - A key / value pair list of parameters to pass into this BO method.
+
 ## Usage
-Within Bezlio, this plugin can be used to call any Epicor BO method.  Using Javascript, here are a few examples:
+Within Bezlio, this plugin can be used to call any Epicor BO method.  These connections can be made using either the wizard-based data connections tool in Bezlio or with Javascript code (which would give you the most flexibility).  We will document a few examples here in Javascript:
 
 *Execute a BAQ Named 'MyTestBAQ'*
 ``` 

@@ -47,12 +47,14 @@ Allows you to connect to an instance of Salesforce and interact with the data us
 In order to compile this plugins project you will need either Visual Studio 2015 (preferred) or Visual Studio Code.  It may be possible to use older versions of Visual Studio or Visual Studio Community.  This has not yet been tested by the Bezlio team so if you have success please let us know so we can update this documentation.
 1. Start by downloading the source using the 'Clone or download' button and selecting 'Download ZIP'.  If you are familiar with Git you may also clone the repository which will allow you to submit updates if you are so inclined.
 2. Unzip the file and load it into your development environment.  
-3. If you are using Visual Studio:
+
+### If you are using Visual Studio:
   * Souble-click 'Bezlio Plugins.sln' to load the solution.
   * Go to Build / Configuration Manager and ensure the 'Platform' listed for each project is set to 'x86'.  Close the dialog.
   * Press F6 to build the solution.
   * Locate the plugins in their respective Plugins\{PluginName}\bin\x86\Debug folders.
-4. If you are using Visual Studio Code, you will need to first install the C# plugin and also MSBuild.  Then:
+
+### If you are using Visual Studio Code, you will need to first install the C# plugin and also MSBuild.  Then:
   * Open the extracted folder in Visual Studio Code.
   * Press Ctl + Shift + B to build all projects.
   * Locate the plugins in their respective Plugins\{PluginName}\bin\x86\Debug folders.
