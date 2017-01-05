@@ -52,78 +52,80 @@ namespace bezlio.rdb.plugins
             // Establish a connection to Epicor
             object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
 
-            try
+            if (epicorConn != null)
             {
-                // Load the referenced BO
-                object bo = Common.GetBusinessObject(epicorConn, request.BOName.ToString(), ref response);
-
-                // Develop parameters object
-                int parameterCount = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters().Count();
-                object[] parameters = new object[parameterCount];
-                for (int x = 0; x < parameterCount; x++)
+                try
                 {
-                    string parameterName = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].Name;
-                    var definedParameter = request.Parameters.Where((p) => p.Key.Equals(parameterName));
-                    if (definedParameter.Count() > 0)
+                    // Load the referenced BO
+                    object bo = Common.GetBusinessObject(epicorConn, request.BOName.ToString(), ref response);
+
+                    // Develop parameters object
+                    int parameterCount = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters().Count();
+                    object[] parameters = new object[parameterCount];
+                    for (int x = 0; x < parameterCount; x++)
                     {
-                        // If this is a dataset parameter we need to deserialize it first, otherwise a straight convert should be fine
-                        if (bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType.ToString().Contains("DataSet"))
+                        string parameterName = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].Name;
+                        var definedParameter = request.Parameters.Where((p) => p.Key.Equals(parameterName));
+                        if (definedParameter.Count() > 0)
                         {
-                            Type t = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType;
-                            JsonSerializerSettings settings = new JsonSerializerSettings();
-                            var ds = JsonConvert.DeserializeObject(definedParameter.First().Value, t, settings);
-                            parameters[x] = ds;
+                            // If this is a dataset parameter we need to deserialize it first, otherwise a straight convert should be fine
+                            if (bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType.ToString().Contains("DataSet"))
+                            {
+                                Type t = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType;
+                                JsonSerializerSettings settings = new JsonSerializerSettings();
+                                var ds = JsonConvert.DeserializeObject(definedParameter.First().Value, t, settings);
+                                parameters[x] = ds;
+                            }
+                            else
+                            {
+                                Type t = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType;
+                                if (t.IsByRef)
+                                    t = t.GetElementType();
+
+                                parameters[x] = Convert.ChangeType(definedParameter.First().Value, t);
+                            }
+                        }
+                        else if (bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType.ToString().Contains("DataSet"))
+                        {
+                            parameters[x] = Activator.CreateInstance(bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType); ;
+                        }
+                    }
+
+                    if (bo.GetType().GetMethod(request.BOMethodName.ToString()).ReturnType != typeof(void))
+                    {
+                        object returnObj = Activator.CreateInstance(bo.GetType().GetMethod(request.BOMethodName.ToString()).ReturnType);
+                        returnObj = bo.GetType().GetMethod(request.BOMethodName.ToString()).Invoke(bo, parameters);
+
+                        if (request.BOName.ToString() == "DynamicQuery")
+                        {
+                            DataTable dt = ((DataSet)returnObj).Tables["Results"];
+                            response.Data = JsonConvert.SerializeObject(dt);
                         }
                         else
                         {
-                            Type t = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType;
-                            if (t.IsByRef)
-                                t = t.GetElementType();
-
-                            parameters[x] = Convert.ChangeType(definedParameter.First().Value, t);
+                            response.Data = JsonConvert.SerializeObject(returnObj);
                         }
-                    }
-                    else if (bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType.ToString().Contains("DataSet"))
-                    {
-                        parameters[x] = Activator.CreateInstance(bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType); ;
-                    }
-                }
-
-                if (bo.GetType().GetMethod(request.BOMethodName.ToString()).ReturnType != typeof(void))
-                {
-                    object returnObj = Activator.CreateInstance(bo.GetType().GetMethod(request.BOMethodName.ToString()).ReturnType);
-                    returnObj = bo.GetType().GetMethod(request.BOMethodName.ToString()).Invoke(bo, parameters);
-
-                    if (request.BOName.ToString() == "DynamicQuery")
-                    {
-                        DataTable dt = ((DataSet)returnObj).Tables["Results"];
-                        response.Data = JsonConvert.SerializeObject(dt);
                     }
                     else
                     {
-                        response.Data = JsonConvert.SerializeObject(returnObj);
+                        bo.GetType().GetMethod(request.BOMethodName.ToString()).Invoke(bo, parameters);
+                        response.Data = JsonConvert.SerializeObject("Update Successful");
                     }
+
+
                 }
-                else
+                catch (Exception ex)
                 {
-                    bo.GetType().GetMethod(request.BOMethodName.ToString()).Invoke(bo, parameters);
-                    response.Data = JsonConvert.SerializeObject("Update Successful");
+                    if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                    {
+                        response.ErrorText += ex.InnerException.ToString();
+                    }
+
+                    response.Error = true;
+                    response.ErrorText += ex.Message;
                 }
-
-
+                finally { Common.CloseEpicorConnection(epicorConn, ref response); }
             }
-            catch (Exception ex)
-            {
-                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
-                {
-                    response.ErrorText += ex.InnerException.ToString();
-                }
-
-                response.Error = true;
-                response.ErrorText += ex.Message;
-            }
-            finally { Common.CloseEpicorConnection(epicorConn, ref response); }
-
 
             // Return response object
             return response;
