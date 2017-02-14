@@ -15,6 +15,7 @@ namespace bezlio.rdb.plugins
     {
         public string Context { get; set; }
         public string DSN { get; set; }
+        public string Connection { get; set; }
         public string QueryName { get; set; }
         public List<KeyValuePair<string, string>> Parameters { get; set; }
 
@@ -32,6 +33,7 @@ namespace bezlio.rdb.plugins
 
             model.Context = "Location name where ODBC query files are stored.";
             model.DSN = "The name of the ODBC connection.";
+            model.Connection = "Full connection string to use in lieu of a DSN.";
             model.QueryName = "The ODBC query filename to execute.";
             model.Parameters = new List<KeyValuePair<string, string>>();
             model.Parameters.Add(new KeyValuePair<string, string>("CustomerId", "102"));
@@ -99,22 +101,27 @@ namespace bezlio.rdb.plugins
 
                 string sql = ReadAllText(locationPath + request.QueryName + ".sql");
 
-                // Locate the connection entry specified
-                ODBCConnectionInfo connection = connections.Where((c) => c.DSN.Equals(request.DSN)).FirstOrDefault();
-
-                //WriteDebugLog("Connection Created");
-
                 // Perform any replacements on passed variables
                 if (request.Parameters != null && request.Parameters.Count > 0) {
                     FillQueryParameters(ref sql, request.Parameters);
                 }
 
-                // Now obtain a connection
-                object odbcConn = getConnection("ODBC"
-                            , connection.DSN);
+                object odbcConn;
+                if (string.IsNullOrEmpty(request.Connection))
+                {
+                    // Use the ODBC DSN
+                    // Locate the connection entry specified
+                    ODBCConnectionInfo connection = connections.Where((c) => c.DSN.Equals(request.DSN)).FirstOrDefault();
 
-                //WriteDebugLog("Connection Received");
-
+                    // Now obtain a connection
+                    odbcConn = getConnection("ODBC"
+                                , connection.DSN);
+                } else
+                {
+                    // Use a connection string
+                    odbcConn = new OdbcConnection(request.Connection);
+                }
+       
                 DataTable dtResponse = await executeQuery(odbcConn, sql);
 
                 //WriteDebugLog("Query Executed");
