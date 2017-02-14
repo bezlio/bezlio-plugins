@@ -27,6 +27,7 @@ This method runs a query that is intended to perform an update or insert into th
 Required Arguments:
 * Context - The name of the SQL file location as defined in the 'sqlFileLocations' section of the plugin config file.
 * DSN - The name of the connection as defined in the 'connections' section of the plugin config file.
+* Connection - If you leave the DSN blank, you can fill in a connection string here for DSN-less connections.
 * QueryName - The name of the query to run (without the .sql extension) from within the SQL file location.
 * Parameters - If you write your .SQL file with parameters (text enclosed in {}), this key / value pair listing will do a find and replace of those parameters before running the query.
 
