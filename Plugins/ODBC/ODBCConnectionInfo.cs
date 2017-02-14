@@ -5,5 +5,6 @@
         public ODBCConnectionInfo() { }
 
         public string DSN { get; set; }
+        public string Connection { get; set; }
     }
 }
