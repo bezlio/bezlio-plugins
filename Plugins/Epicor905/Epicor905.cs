@@ -79,7 +79,11 @@ namespace bezlio.rdb.plugins
                         }
                         else
                         {
-                            parameters[x] = Convert.ChangeType(definedParameter.First().Value, bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType);
+                            Type t = bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType;
+                            if (t.IsByRef)
+                                t = t.GetElementType();
+
+                            parameters[x] = Convert.ChangeType(definedParameter.First().Value, t);
                         }
                     }
                     else if (bo.GetType().GetMethod(request.BOMethodName.ToString()).GetParameters()[x].ParameterType.ToString().Contains("DataSet"))
