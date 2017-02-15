@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -14,7 +15,16 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public List<string> EmployeeNum { get; set; }
         public int Shift { get; set; }
 
-        public Labor_ClockIn()  { }
+        public Labor_ClockIn() { }
+    }
+
+    class Labor_ClockOut
+    {
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public List<string> EmployeeNum { get; set; }
+
+        public Labor_ClockOut() { }
     }
 
     class Labor_StartActivity
@@ -27,6 +37,15 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public int JobOp { get; set; }
 
         public Labor_StartActivity()  { }
+    }
+
+    class Labor_EndActivities
+    {
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public List<int> LaborHedSeq { get; set; }
+
+        public Labor_EndActivities() { }
     }
 
     public class LaborHelperMethods
@@ -86,9 +105,55 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                     response.ErrorText += ex.InnerException.ToString();
                 }
                 response.Error = true;
-                response.ErrorText = ex.Message;
+                response.ErrorText += ex.Message;
             }
             finally { Common.CloseEpicorConnection(epicorConn, ref response); }
+
+            // Return response object
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> Labor_ClockOut(RemoteDataBrokerRequest rdbRequest)
+        {
+            // Deserialize the request object
+            Labor_ClockOut request = JsonConvert.DeserializeObject<Labor_ClockOut>(rdbRequest.Data);
+
+            // Create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            // Establish a connection to Epicor
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+
+            // Load the referenced BO
+            object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
+            object boEmpBasic = Common.GetBusinessObject(epicorConn, "EmpBasic", ref response);
+            List<dynamic> clockOutResults = new List<dynamic>();
+
+            foreach (string emp in request.EmployeeNum)
+            {
+                dynamic clockOutResult = new ExpandoObject();
+                clockOutResult.EmployeeNum = emp;
+
+                try
+                {
+                    boEmpBasic.GetType().GetMethod("ClockOut").Invoke(boEmpBasic, new object[] { emp });
+                    clockOutResult.Error = false;
+                } catch (Exception ex)
+                {
+                    if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                    {
+                        clockOutResult.ErrorText += ex.InnerException.ToString();
+                    }
+                    clockOutResult.Error = true;
+                    clockOutResult.ErrorText += ex.Message;
+                }
+
+                clockOutResults.Add(clockOutResult);
+            }
+
+            response.Data = JsonConvert.SerializeObject(clockOutResults);
+
+            Common.CloseEpicorConnection(epicorConn, ref response);
 
             // Return response object
             return response;
@@ -144,7 +209,67 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                     response.ErrorText += ex.InnerException.ToString();
                 }
                 response.Error = true;
-                response.ErrorText = ex.Message;
+                response.ErrorText += ex.Message;
+            }
+            finally { Common.CloseEpicorConnection(epicorConn, ref response); }
+
+            // Return response object
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> Labor_EndActivities(RemoteDataBrokerRequest rdbRequest)
+        {
+            // Deserialize the request object
+            Labor_EndActivities request = JsonConvert.DeserializeObject<Labor_EndActivities>(rdbRequest.Data);
+
+            // Create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            // Establish a connection to Epicor
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+
+            DataSet returnDs = new DataSet();
+
+            try
+            {
+                // Load the referenced BO
+                object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
+
+
+                foreach (int laborHed in request.LaborHedSeq)
+                {
+                    // First we need to do a get by ID on the laborHedSeq
+                    var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
+
+                    // Now mark each LaborDtl in this dataset with a RowMod U
+                    foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
+                    {
+                        if ((bool)dr["ActiveTrans"] == true) {
+                            dr["EndActivity"] = true;
+                            dr["RowMod"] = "U";
+                        }
+                    }
+
+                    // Now call EndActivity 
+                    bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
+
+                    // Update
+                    bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+
+                    // Merge the data into our return
+                    returnDs.Merge((DataSet)ds);
+                }
+
+                response.Data = JsonConvert.SerializeObject(returnDs);
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+                response.Error = true;
+                response.ErrorText += ex.Message;
             }
             finally { Common.CloseEpicorConnection(epicorConn, ref response); }
 
