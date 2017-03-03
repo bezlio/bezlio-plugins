@@ -26,7 +26,7 @@ namespace bezlio.rdb.plugins
 
         private Assembly EngineAssembly { get; set; }
         private Assembly SharedAssembly { get; set; }
-        private dynamic ReportObject { get; set; }
+        public dynamic ReportObject { get; set; }
 
         public void SetCredentials(List<Tuple<string, string, string>> credentials)
         {
@@ -53,6 +53,14 @@ namespace bezlio.rdb.plugins
 
                 table.ApplyLogOnInfo(tableLogOnInfo);
             }
+        }
+
+        public dynamic GetReportDetails()
+        {
+            return new
+            {
+                ParameterFields = this.ReportObject.ParameterFields
+            };
         }
 
         public byte[] GetAsPDF()

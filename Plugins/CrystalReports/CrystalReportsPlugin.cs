@@ -13,7 +13,6 @@ namespace bezlio.rdb.plugins
     {
         public string FolderName { get; set; }
         public string ReportName { get; set; }
-        public string ConnectionName { get; set; }
         public List<KeyValuePair<string, string>> Parameters { get; set; }
 
         public CrystalReportsDataModel()
@@ -31,7 +30,6 @@ namespace bezlio.rdb.plugins
 
             model.FolderName = GetFolderNames();
             model.ReportName = "The RPT filename to run.";
-            model.ConnectionName = GetConnectionNames();
             model.Parameters = new List<KeyValuePair<string, string>>();
             model.Parameters.Add(new KeyValuePair<string, string>("CustomerId", "102"));
 
@@ -90,16 +88,57 @@ namespace bezlio.rdb.plugins
             return result;
         }
 
-        public static string GetConnectionNames()
+        public static async Task<RemoteDataBrokerResponse> GetReportList(RemoteDataBrokerRequest rdbRequest)
         {
-            var result = "[";
-            foreach (var connection in GetConnections())
+            CrystalReportsDataModel request = JsonConvert.DeserializeObject<CrystalReportsDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
+            try
             {
-                result += connection.ConnectionName + ",";
+                string locationPath = GetLocations().Where((l) => l.LocationName.Equals(request.FolderName)).FirstOrDefault().LocationPath;
+
+                // Return the data table
+                List<dynamic> result = new List<dynamic>();
+                foreach (var f in Directory.GetFiles(locationPath, @"*", SearchOption.AllDirectories))
+                {
+                    CrystalReport cr = new CrystalReport(f);
+                    FileInfo fi = new FileInfo(f);
+                    result.Add(new
+                    {
+                        Attributes = fi.Attributes,
+                        CreationTime = fi.CreationTime,
+                        CreationTimeUtc = fi.CreationTimeUtc,
+                        Directory = fi.Directory,
+                        DirectoryName = fi.DirectoryName,
+                        Exists = fi.Exists,
+                        Extension = fi.Extension,
+                        FullName = fi.FullName,
+                        IsReadOnly = fi.IsReadOnly,
+                        LastAccessTime = fi.LastAccessTime,
+                        LastAccessTimeUtc = fi.LastAccessTimeUtc,
+                        LastWriteTime = fi.LastWriteTime,
+                        LastWriteTimeUtc = fi.LastWriteTimeUtc,
+                        Length = fi.Length,
+                        Name = fi.Name,
+                        BaseName = Path.GetFileNameWithoutExtension(f),
+                        ReportDetails = cr.GetReportDetails()
+                    });
+                }
+                response.Data = JsonConvert.SerializeObject(result);
             }
-            result.TrimEnd(',');
-            result += "]";
-            return result;
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+            }
+
+            // Return our response
+            return response;
         }
 
         public static async Task<RemoteDataBrokerResponse> ReturnAsPDF(RemoteDataBrokerRequest rdbRequest)
@@ -117,14 +156,17 @@ namespace bezlio.rdb.plugins
                 string locationPath = GetLocations().Where((l) => l.LocationName.Equals(request.FolderName)).FirstOrDefault().LocationPath;
 
                 CrystalReport cr = new CrystalReport(locationPath + request.ReportName);
-
                 List<Tuple<string, string, string>> credentials = new List<Tuple<string, string, string>>();
-                credentials.Add(new Tuple<string, string, string>("", "sa", "2A5Raspa"));
+                foreach (var connection in GetConnections())
+                {
+                    credentials.Add(new Tuple<string, string, string>(connection.DatabaseName, connection.UserName, connection.Password));
+                }
                 cr.SetCredentials(credentials);
 
                 response.Data = JsonConvert.SerializeObject(cr.GetAsPDF());
 
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 response.Error = true;
                 response.ErrorText = Environment.MachineName + ": " + ex.Message;
