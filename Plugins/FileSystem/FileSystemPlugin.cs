@@ -114,9 +114,33 @@ namespace bezlio.rdb.plugins
                 // Deserialize the values from Settings
                 List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
                 string locationPath = locations.Where((l) => l.LocationName.Equals(request.Context)).FirstOrDefault().LocationPath;
-                
+
                 // Return the data table
-                response.Data = JsonConvert.SerializeObject(Directory.GetFiles(locationPath, @"*", SearchOption.AllDirectories));
+                List<dynamic> result = new List<dynamic>();
+                foreach (var f in Directory.GetFiles(locationPath, @"*", SearchOption.AllDirectories))
+                {
+                    FileInfo fi = new FileInfo(f);
+                    result.Add(new
+                    {
+                        Attributes = fi.Attributes,
+                        CreationTime = fi.CreationTime,
+                        CreationTimeUtc = fi.CreationTimeUtc,
+                        Directory = fi.Directory,
+                        DirectoryName = fi.DirectoryName,
+                        Exists = fi.Exists,
+                        Extension = fi.Extension,
+                        FullName = fi.FullName,
+                        IsReadOnly = fi.IsReadOnly,
+                        LastAccessTime = fi.LastAccessTime,
+                        LastAccessTimeUtc = fi.LastAccessTimeUtc,
+                        LastWriteTime = fi.LastWriteTime,
+                        LastWriteTimeUtc = fi.LastWriteTimeUtc,
+                        Length = fi.Length,
+                        Name = fi.Name,
+                        BaseName = Path.GetFileNameWithoutExtension(f)
+                    });
+                }
+                response.Data = JsonConvert.SerializeObject(result);
             }
             catch (Exception ex)
             {
