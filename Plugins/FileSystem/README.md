@@ -18,6 +18,24 @@ Required Arguments:
 * Context - The name of the file system location as defined in the 'fileSystemLocations' section of the plugin config file.
 * FileName - A search pattern to limit the files returned (for example '*.xls').
 
+Return Values (for each file):
+    Attributes 
+    CreationTime 
+    CreationTimeUtc 
+    Directory 
+    DirectoryName 
+    Exists 
+    Extension 
+    FullName 
+    IsReadOnly 
+    LastAccessTime 
+    LastAccessTimeUtc
+    LastWriteTime
+    LastWriteTimeUtc 
+    Length 
+    Name 
+    BaseName 
+
 ### GetFile
 Retrieve a file from a given specified file system location.  The file is converted into a byte array so that it can be transmitted over the Bezlio communication protocol.
 
