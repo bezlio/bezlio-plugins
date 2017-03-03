@@ -28,12 +28,117 @@ namespace bezlio.rdb.plugins
 
             CrystalReportsDataModel model = new CrystalReportsDataModel();
 
-            model.FolderName = "Folder name where .RPT files are stored.";
+            model.FolderName = GetFolderNames();
             model.ReportName = "The RPT filename to run.";
             model.Parameters = new List<KeyValuePair<string, string>>();
             model.Parameters.Add(new KeyValuePair<string, string>("CustomerId", "102"));
 
             return model;
+        }
+
+        public static List<FileLocation> GetLocations()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "CrystalReports.dll.config";
+            string strLocations = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "rptFileLocations").FirstOrDefault();
+                if (xLocations != null)
+                {
+                    strLocations = xLocations.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
+        }
+
+        public static List<CrystalConnectionInfo> GetConnections()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "CrystalReports.dll.config";
+            string strConnections = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
+                if (xConnections != null)
+                {
+                    strConnections = xConnections.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<CrystalConnectionInfo>>(strConnections);
+        }
+
+        public static string GetFolderNames()
+        {
+            var result = "[";
+            foreach(var location in GetLocations())
+            {
+                result += location.LocationName + ",";
+            }
+            result.TrimEnd(',');
+            result += "]";
+            return result;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> GetReportList(RemoteDataBrokerRequest rdbRequest)
+        {
+            CrystalReportsDataModel request = JsonConvert.DeserializeObject<CrystalReportsDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
+            try
+            {
+                string locationPath = GetLocations().Where((l) => l.LocationName.Equals(request.FolderName)).FirstOrDefault().LocationPath;
+
+                // Return the data table
+                List<dynamic> result = new List<dynamic>();
+                foreach (var f in Directory.GetFiles(locationPath, @"*", SearchOption.AllDirectories))
+                {
+                    CrystalReport cr = new CrystalReport(f);
+                    FileInfo fi = new FileInfo(f);
+                    result.Add(new
+                    {
+                        Attributes = fi.Attributes,
+                        CreationTime = fi.CreationTime,
+                        CreationTimeUtc = fi.CreationTimeUtc,
+                        Directory = fi.Directory,
+                        DirectoryName = fi.DirectoryName,
+                        Exists = fi.Exists,
+                        Extension = fi.Extension,
+                        FullName = fi.FullName,
+                        IsReadOnly = fi.IsReadOnly,
+                        LastAccessTime = fi.LastAccessTime,
+                        LastAccessTimeUtc = fi.LastAccessTimeUtc,
+                        LastWriteTime = fi.LastWriteTime,
+                        LastWriteTimeUtc = fi.LastWriteTimeUtc,
+                        Length = fi.Length,
+                        Name = fi.Name,
+                        BaseName = Path.GetFileNameWithoutExtension(f),
+                        ReportDetails = cr.GetReportDetails()
+                    });
+                }
+                response.Data = JsonConvert.SerializeObject(result);
+            }
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+            }
+
+            // Return our response
+            return response;
         }
 
         public static async Task<RemoteDataBrokerResponse> ReturnAsPDF(RemoteDataBrokerRequest rdbRequest)
@@ -48,37 +153,20 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                // Settings do not seem to reflect in cleanly, we will read the settings directly
-                string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string cfgPath = asmPath + @"\" + "CrystalReports.dll.config";
-                string strLocations = "";
-
-                if (File.Exists(cfgPath))
-                {
-                    // Load in the cfg file
-                    XDocument xConfig = XDocument.Load(cfgPath);
-
-                    // Get the setting for the debug log destination
-                    XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "rptFileLocations").FirstOrDefault();
-                    if (xLocations != null)
-                    {
-                        strLocations = xLocations.Value;
-                    }
-                }
-
-                // Deserialize the values from Settings
-                List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
-                string locationPath = locations.Where((l) => l.LocationName.Equals(request.FolderName)).FirstOrDefault().LocationPath;
+                string locationPath = GetLocations().Where((l) => l.LocationName.Equals(request.FolderName)).FirstOrDefault().LocationPath;
 
                 CrystalReport cr = new CrystalReport(locationPath + request.ReportName);
-
                 List<Tuple<string, string, string>> credentials = new List<Tuple<string, string, string>>();
-                credentials.Add(new Tuple<string, string, string>("", "sa", "2A5Raspa"));
+                foreach (var connection in GetConnections())
+                {
+                    credentials.Add(new Tuple<string, string, string>(connection.DatabaseName, connection.UserName, connection.Password));
+                }
                 cr.SetCredentials(credentials);
 
                 response.Data = JsonConvert.SerializeObject(cr.GetAsPDF());
 
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 response.Error = true;
                 response.ErrorText = Environment.MachineName + ": " + ex.Message;
