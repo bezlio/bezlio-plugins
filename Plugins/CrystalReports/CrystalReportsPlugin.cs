@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -126,10 +127,18 @@ namespace bezlio.rdb.plugins
                         Length = fi.Length,
                         Name = fi.Name,
                         BaseName = Path.GetFileNameWithoutExtension(f),
-                        ReportDetails = cr.GetReportDetails()
+                        ReportDetails = cr.GetReportDetails(),
+                        obj = cr,
+                        FolderName = request.FolderName
                     });
                 }
                 response.Data = JsonConvert.SerializeObject(result);
+
+                foreach (var r in result)
+                {
+                    r.obj.Close();
+                }
+
             }
             catch (Exception ex)
             {
@@ -153,9 +162,11 @@ namespace bezlio.rdb.plugins
 
             try
             {
+                // Load Crystal Report
                 string locationPath = GetLocations().Where((l) => l.LocationName.Equals(request.FolderName)).FirstOrDefault().LocationPath;
-
                 CrystalReport cr = new CrystalReport(locationPath + request.ReportName);
+
+                // Apply Credentials
                 List<Tuple<string, string, string>> credentials = new List<Tuple<string, string, string>>();
                 foreach (var connection in GetConnections())
                 {
@@ -163,13 +174,29 @@ namespace bezlio.rdb.plugins
                 }
                 cr.SetCredentials(credentials);
 
+                // Apply Parameters
+                var parametersObj = request.Parameters.Where(p => p.Key.Equals("ReportDetails"));
+                if (parametersObj.Count() > 0)
+                {
+                    JContainer parameters = JObject.Parse(parametersObj.FirstOrDefault().Value);
+                    //var parameters = JsonConvert.DeserializeObject(parametersObj.FirstOrDefault().Value);
+                    cr.ApplyParameters(parameters);
+                }
+
                 response.Data = JsonConvert.SerializeObject(cr.GetAsPDF());
+
+                cr.Close();
 
             }
             catch (Exception ex)
             {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
                 response.Error = true;
-                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+                response.ErrorText += ex.Message;
             }
 
             // Return our response
