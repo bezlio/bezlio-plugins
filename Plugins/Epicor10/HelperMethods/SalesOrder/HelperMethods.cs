@@ -86,15 +86,15 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
             try
             {
                 // Load the referenced BO
-                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);          
-                Type t = bo.GetType().GetMethod("SubmitNewOrder").GetParameters()[0].ParameterType;
-                
+                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);     
                 // Serialize the passed object into the order data type
+                Type t = bo.GetType().GetMethod("UpdateExt").GetParameters()[0].ParameterType;
                 var ds = JsonConvert.DeserializeObject(request.ds, t, new JsonSerializerSettings());
+                                
                 // Call to submit the order
-                bo.GetType().GetMethod("SubmitNewOrder").Invoke(bo, new object[] { ds });
+                var ret = bo.GetType().GetMethod("UpdateExt").Invoke(bo, new object[] { ds, true, false, false });
                 // Return the response as success if it got this far
-                response.Data = JsonConvert.SerializeObject(ds);
+                response.Data = JsonConvert.SerializeObject(ret);
 
             }
             catch (Exception ex)
