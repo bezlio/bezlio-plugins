@@ -1,0 +1,23 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Visual_8_Plugin.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="connections" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">
+                  [
+                  {
+                  'ConnectionName': 'Visual8',
+                  'InstanceName': 'VMFG',
+                  'Provider': 'SQLServer',
+                  'Driver': '',
+                  'DataSource': 'server/database',
+                  'UserName': 'SYSADM',
+                  'Password': 'SYSADM'
+                  }
+                  ]</Value>
+    </Setting>
+    <Setting Name="visualClientPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\Infor\Visual8\Client</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
