@@ -22,46 +22,5 @@ namespace bezlio.rdb.plugins.Properties {
                 return defaultInstance;
             }
         }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute(@"
-                  [
-                  {
-                  'locationName': 'Friendly Name',
-                  'locationPath': 'C:\\Path\\Reports\\'
-                  },
-                  {
-                  'locationName': 'Another Friendly Name',
-                  'locationPath': 'C:\\Different Path\\Reports\\'
-                  }
-                  ]
-                
-")]
-        public string rptFileLocations {
-            get {
-                return ((string)(this["rptFileLocations"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute(@"
-                  [
-                  {
-                  'connectionName': 'Friendly Connection Name',
-                  'serverAddress': 'SQL_SERVER',
-                  'databaseName': 'DATABASE_NAME',
-                  'userName': 'SQL_USER_NAME',
-                  'password': 'SQL_USER_PASSWORD'
-                  }
-                  ]
-                
-")]
-        public string connections {
-            get {
-                return ((string)(this["connections"]));
-            }
-        }
     }
 }
