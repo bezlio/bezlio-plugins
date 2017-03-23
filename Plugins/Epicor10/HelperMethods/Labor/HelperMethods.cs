@@ -35,6 +35,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public string JobNum { get; set; }
         public int JobAsm { get; set; }
         public int JobOp { get; set; }
+        public bool Setup { get; set; }
 
         public Labor_StartActivity()  { }
     }
@@ -43,7 +44,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
     {
         public string Connection { get; set; }
         public string Company { get; set; }
-        public List<int> LaborHedSeq { get; set; }
+        public string LaborDataSet { get; set; }
 
         public Labor_EndActivities() { }
     }
@@ -136,6 +137,36 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
 
                 try
                 {
+                    // First end any activities this employee might be clocked onto
+                    object laborHed = Common.GetBusinessObjectDataSet("Labor", "Erp.BO.LaborHedListDataSet", ref response);
+                    laborHed = bo.GetType().GetMethod("GetList").Invoke(bo, new object[] { "ActiveTrans = true and EmployeeNum = '" + emp + "'", 0, 1, false });
+                    foreach (DataRow lh in ((DataSet)laborHed).Tables[0].Rows)
+                    {
+                        // First we need to do a get by ID on the laborHedSeq
+                        var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { Convert.ToInt32(lh["LaborHedSeq"]) });
+
+                        // Now mark each LaborDtl in this dataset with a RowMod U
+                        int laborDtlUpdated = 0;
+                        foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
+                        {
+                            if ((bool)dr["ActiveTrans"] == true)
+                            {
+                                dr["EndActivity"] = true;
+                                dr["RowMod"] = "U";
+                                laborDtlUpdated += 1;
+                            }
+                        }
+
+                        if (laborDtlUpdated > 0)
+                        {
+                            // Now call EndActivity 
+                            bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
+
+                            // Update
+                            bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+                        }
+                    }
+
                     boEmpBasic.GetType().GetMethod("ClockOut").Invoke(boEmpBasic, new object[] { emp });
                     clockOutResult.Error = false;
                 } catch (Exception ex)
@@ -182,8 +213,39 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                     // First we need to do a get by ID on the laborHedSeq
                     var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
 
-                    // We are going to cycle through each laborhedseq to start production
-                    bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "P", ds });
+                    // Now end any activities this employee may currently be clocked onto
+                    int laborDtlUpdated = 0;
+                    foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
+                    {
+                        if ((bool)dr["ActiveTrans"] == true)
+                        {
+                            dr["EndActivity"] = true;
+                            dr["RowMod"] = "U";
+                            laborDtlUpdated += 1;
+                        }
+                    }
+
+                    if (laborDtlUpdated > 0)
+                    {
+                        // Now call EndActivity 
+                        bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
+
+                        // Update
+                        bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+                    }
+
+                    // Now put them onto the new job
+                    if (request.Setup)
+                    {
+                        // We are going to cycle through each laborhedseq to start production
+                        bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "S", ds });
+                    }
+                    else
+                    {
+                        // We are going to cycle through each laborhedseq to start production
+                        bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "P", ds });
+                    }
+
 
                     // JobNum
                     bo.GetType().GetMethod("DefaultJobNum").Invoke(bo, new object[] { ds, request.JobNum });
@@ -235,17 +297,22 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                 // Load the referenced BO
                 object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
 
+                // Deserialize the provided LaborDataSet
+                JsonSerializerSettings settings = new JsonSerializerSettings();
+                var laborDs = JsonConvert.DeserializeObject(request.LaborDataSet, typeof(DataSet), settings);
 
-                foreach (int laborHed in request.LaborHedSeq)
+                foreach (DataRow laborDtl in ((DataSet)laborDs).Tables["LaborDtl"].Rows)
                 {
                     // First we need to do a get by ID on the laborHedSeq
-                    var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
+                    var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { Convert.ToInt32(laborDtl["LaborHedSeq"]) });
 
                     // Now mark each LaborDtl in this dataset with a RowMod U
                     foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
                     {
-                        if ((bool)dr["ActiveTrans"] == true) {
+                        if ((bool)dr["ActiveTrans"] == true)
+                        {
                             dr["EndActivity"] = true;
+                            dr["LaborQty"] = laborDtl["LaborQty"];
                             dr["RowMod"] = "U";
                         }
                     }

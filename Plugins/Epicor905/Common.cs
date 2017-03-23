@@ -65,5 +65,12 @@ namespace bezlio.rdb.plugins
 
             return bo;
         }
+
+        public static object GetBusinessObjectDataSet(string boName, string dataSetName, ref RemoteDataBrokerResponse response)
+        {
+            string clientPath = Config.GetClientPath(ref response);
+            Assembly genericIFAssembly = Assembly.LoadFrom(clientPath + @"\Epicor.Mfg.IF.I" + boName + ".dll");
+            return Activator.CreateInstance(genericIFAssembly.GetType(dataSetName));
+        }
     }
 }
