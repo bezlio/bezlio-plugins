@@ -1,6 +1,6 @@
 ﻿namespace bezlio.rdb.plugins
 {
-    class EpicorConnection
+    public class EpicorConnection
     {
         public EpicorConnection() { }
 
