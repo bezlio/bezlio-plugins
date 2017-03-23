@@ -2,8 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace bezlio.rdb.plugins
 {
@@ -27,14 +30,71 @@ namespace bezlio.rdb.plugins
         public static object GetArgs()
         {
             Epicor905DataModel model = new Epicor905DataModel();
-            model.Connection = "The name of the server connection.";
+            model.Connection = GetConnectionNames();
             model.Company = "Company ID";
-            model.BOName = "Epicor BO (i.e. DynamicQuery)";
+            model.BOName = GetBONames();
             model.BOMethodName = "Method Name (i.e. ExecuteByID)";
             model.Parameters = new List<KeyValuePair<string, string>>();
             model.Parameters.Add(new KeyValuePair<string, string>("pcQueryID", "BAQ ID"));
 
             return model;
+        }
+
+        public static List<EpicorConnection> GetConnections()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "Epicor905.dll.config";
+            string strConnections = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
+                if (xConnections != null)
+                {
+                    strConnections = xConnections.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<EpicorConnection>>(strConnections);
+        }
+
+        public static string GetConnectionNames()
+        {
+            var result = "[";
+            foreach (var connection in GetConnections())
+            {
+                result += connection.ConnectionName + ",";
+            }
+            result.TrimEnd(',');
+            result += "]";
+            return result;
+        }
+
+        public static string GetBONames()
+        {
+            var result = "[";
+
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            string clientPath = Config.GetClientPath(ref response);
+
+            List<string> files = new List<string>();
+            foreach (var f in Directory.GetFiles(clientPath, @"Epicor.Mfg.BO.*.dll", SearchOption.TopDirectoryOnly))
+            {
+                files.Add(Path.GetFileNameWithoutExtension(f).Replace("Epicor.Mfg.BO.", ""));
+            }
+
+            files.Sort();
+
+            foreach (var file in files)
+            {
+                result += file + ","; ;
+            }
+
+            result.TrimEnd(',');
+            result += "]";
+            return result;
         }
 
         // This method allows you to execute any Epicor BO method.  This is helpful for when you want to call a

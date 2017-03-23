@@ -1,6 +1,6 @@
 ﻿namespace bezlio.rdb.plugins
 {
-    class ODBCConnectionInfo
+    public class ODBCConnectionInfo
     {
         public ODBCConnectionInfo() { }
 

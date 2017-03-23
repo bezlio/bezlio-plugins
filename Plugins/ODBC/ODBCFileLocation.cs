@@ -1,6 +1,6 @@
 ﻿namespace bezlio.rdb.plugins
 {
-    class ODBCFileLocation
+    public class ODBCFileLocation
     {
         public ODBCFileLocation() { }
 
