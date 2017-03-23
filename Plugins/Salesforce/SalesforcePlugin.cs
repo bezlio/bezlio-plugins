@@ -56,8 +56,8 @@ namespace bezlio.rdb.plugins
 
             SalesforceDataModel model = new SalesforceDataModel();
 
-            model.Context = "Location name where query files are stored.";
-            model.Connection = "The name of the data connection.";
+            model.Context = GetFolderNames();
+            model.Connection = GetConnectionNames();
             model.QueryName = "Query filename to execute.";
             model.ObjectType = "Pertains to CreateObject method only.";
             model.Parameters = new List<KeyValuePair<string, string>>();
@@ -65,6 +65,71 @@ namespace bezlio.rdb.plugins
 
             return model;
         }
+
+        public static List<SalesforceFileLocation> GetLocations()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "Salesforce.dll.config";
+            string strConnections = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "sqlFileLocations").FirstOrDefault();
+                if (xConnections != null)
+                {
+                    strConnections = xConnections.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<SalesforceFileLocation>>(strConnections);
+        }
+
+        public static List<SalesforceConnectionInfo> GetConnections()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "Salesforce.dll.config";
+            string strConnections = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
+                if (xConnections != null)
+                {
+                    strConnections = xConnections.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<SalesforceConnectionInfo>>(strConnections);
+        }
+
+        public static string GetFolderNames()
+        {
+            var result = "[";
+            foreach (var location in GetLocations())
+            {
+                result += location.LocationName + ",";
+            }
+            result.TrimEnd(',');
+            result += "]";
+            return result;
+        }
+
+        public static string GetConnectionNames()
+        {
+            var result = "[";
+            foreach (var connection in GetConnections())
+            {
+                result += connection.ConnectionName + ",";
+            }
+            result.TrimEnd(',');
+            result += "]";
+            return result;
+        }
+
         public static async Task<RemoteDataBrokerResponse> ExecuteQuery(RemoteDataBrokerRequest rdbRequest)
         {
             // Deserialize the body into the data model

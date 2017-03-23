@@ -19,9 +19,41 @@ namespace bezlio.rdb.plugins
         public static object GetArgs()
         {
             FileSystemDataModel model = new FileSystemDataModel();
-            model.Context = "Location name where files are stored.";
+            model.Context = GetFolderNames();
 
             return model;
+        }
+
+        public static List<FileLocation> GetLocations()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "FileSystem.dll.config";
+            string strLocations = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "fileSystemLocations").FirstOrDefault();
+                if (xLocations != null)
+                {
+                    strLocations = xLocations.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
+        }
+
+        public static string GetFolderNames()
+        {
+            var result = "[";
+            foreach (var location in GetLocations())
+            {
+                result += location.LocationName + ",";
+            }
+            result.TrimEnd(',');
+            result += "]";
+            return result;
         }
 
         public static async Task<RemoteDataBrokerResponse> GetFile(RemoteDataBrokerRequest rdbRequest)

@@ -31,14 +31,78 @@ namespace bezlio.rdb.plugins
         {
             ODBCDataModel model = new ODBCDataModel();
 
-            model.Context = "Location name where ODBC query files are stored.";
-            model.DSN = "The name of the ODBC connection.";
+            model.Context = GetFolderNames();
+            model.DSN = GetConnectionNames();
             model.Connection = "Full connection string to use in lieu of a DSN.";
             model.QueryName = "The ODBC query filename to execute.";
             model.Parameters = new List<KeyValuePair<string, string>>();
             model.Parameters.Add(new KeyValuePair<string, string>("CustomerId", "102"));
 
             return model;
+        }
+
+        public static List<ODBCFileLocation> GetLocations()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "ODBC.dll.config";
+            string strConnections = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "sqlFileLocations").FirstOrDefault();
+                if (xConnections != null)
+                {
+                    strConnections = xConnections.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<ODBCFileLocation>>(strConnections);
+        }
+
+        public static List<ODBCConnectionInfo> GetConnections()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "ODBC.dll.config";
+            string strConnections = "";
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the setting for the debug log destination
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
+                if (xConnections != null)
+                {
+                    strConnections = xConnections.Value;
+                }
+            }
+            return JsonConvert.DeserializeObject<List<ODBCConnectionInfo>>(strConnections);
+        }
+
+        public static string GetFolderNames()
+        {
+            var result = "[";
+            foreach (var location in GetLocations())
+            {
+                result += location.LocationName + ",";
+            }
+            result.TrimEnd(',');
+            result += "]";
+            return result;
+        }
+
+        public static string GetConnectionNames()
+        {
+            var result = "[";
+            foreach (var connection in GetConnections())
+            {
+                result += connection.DSN + ",";
+            }
+            result.TrimEnd(',');
+            result += "]";
+            return result;
         }
 
         public static async Task<RemoteDataBrokerResponse> ExecuteQuery(RemoteDataBrokerRequest rdbRequest)
