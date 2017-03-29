@@ -27,6 +27,10 @@ Allows for directories within your network to be shared out over Bezlio, allowin
 
 Allows you to utilize the Infor VISUAL COM objects to perform transactions within VISUAL 7.0 and below.  
 
+* [Infor VISUAL 7.1/8](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Visual8/)
+
+Allows you to utilize the Infor VISUAL .Net objects to perform transactions within Visual 7.1 and above. 
+
 * [Microsoft SQL Server](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/SQLServer/)
 
 Allows you to connect to a Microsoft SQL Server and run queries that both read and write data.  All of the administrator-permitted queries are stored as .SQL files on the file system, which restricts what users can see and do.
