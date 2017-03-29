@@ -27,7 +27,7 @@ Allows for directories within your network to be shared out over Bezlio, allowin
 
 Allows you to utilize the Infor VISUAL COM objects to perform transactions within VISUAL 7.0 and below.  
 
-* [Infor VISUAL 7.1/8](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Visual8/)
+* [Infor VISUAL 7.1/8](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Visual%208/)
 
 Allows you to utilize the Infor VISUAL .Net objects to perform transactions within Visual 7.1 and above. 
 
