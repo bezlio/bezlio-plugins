@@ -29,19 +29,19 @@ namespace bezlio.rdb.plugins
         public static ConfigDataLayer config;
         public CrystalReports() {
             config = new ConfigDataLayer("CrystalReports");
-            config.verifyTable("CrystalReports", @"create table CrystalReports (ID INTEGER PRIMARY KEY
+            config.verifyTable("CrystalReports", @"create table CrystalReports (ID text PRIMARY KEY
                                                     , DisplayName text
                                                     , Path text
                                                     , Type text)");
 
             config.verifyTable("CrystalReportsCredentials", @"create table CrystalReportsCredentials (ID INTEGER PRIMARY KEY
-                                                    , CrystalReportId integer
+                                                    , CrystalReportId text
                                                     , Database text
                                                     , UserName text
                                                     , Password text)");
 
             config.verifyTable("CrystalReportsAuthorization", @"create table CrystalReportsAuthorization (ID INTEGER PRIMARY KEY
-                                                    , CrystalReportId integer
+                                                    , CrystalReportId text
                                                     , ConnectionId text)");
         }
 
