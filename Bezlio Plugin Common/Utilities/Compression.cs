@@ -9,22 +9,27 @@ namespace bezlio.Utilities
     {
         public static string DecompressString(string base64)
         {
-            // Convert the base64 string into a byte array
-            byte[] gzBuffer = Convert.FromBase64String(base64);
-            using (MemoryStream ms = new MemoryStream()) {
-                int msgLength = BitConverter.ToInt32(gzBuffer, 0);
-                ms.Write(gzBuffer, 0, gzBuffer.Length);
-
-                byte[] buffer = new byte[msgLength];
-
-                ms.Position = 0;
-                using (GZipStream zip = new GZipStream(ms, CompressionMode.Decompress)) {
-                    // Read from the zip stream into our new buffer
-                    zip.Read(buffer, 0, buffer.Length);
+            // Create a GZIP stream with decompression mode.
+            // ... Then create a buffer and write into while reading from the GZIP stream.
+            byte[] gzip = Convert.FromBase64String(base64);
+            using (GZipStream stream = new GZipStream(new MemoryStream(gzip), CompressionMode.Decompress))
+            {
+                const int size = 4096;
+                byte[] buffer = new byte[size];
+                using (MemoryStream memory = new MemoryStream())
+                {
+                    int count = 0;
+                    do
+                    {
+                        count = stream.Read(buffer, 0, size);
+                        if (count > 0)
+                        {
+                            memory.Write(buffer, 0, count);
+                        }
+                    }
+                    while (count > 0);
+                    return Encoding.UTF8.GetString(memory.ToArray()).TrimEnd('\0');
                 }
-
-                // Return the buffer encoded as a UTF8 string
-                return Encoding.UTF8.GetString(buffer).TrimEnd('\0');
             }
         }
 
