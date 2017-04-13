@@ -10,6 +10,7 @@ See generic plugin instructions at https://github.com/bezlio/bezlio-plugins.
 In order to configure this plugin you will need to edit the Visual8.dll.config file in the plugins directory with the text editor of your choice.  Within this file, revise according to these guidelines:
 * The 'connections' section (which starts with <setting name="connections" serializeAs="String"> and ends with </setting>) defines each of the .Net data sources you wish to expose to Bezlio users.  When they chose to interact with this plugin, they are going to simply call the connection by connectionName and will never know the actual .Net registration that is pointing to.  The entries defined in here are in JSON format separated by commas.
 * The 'visualClientPath' section (which starts with <setting name="visualClientPath" serializeAs="String"> and ends with </setting>) defines each of the folder location which includes the Infor Visual .Net client files.
+The connection is defined by the connection name, the name of the instance, the username, and the password. The instance is configured in the Visual client folder by running 'VMFGCONFIGFORMS.exe'. Instances can be tested there to ensure that they are working prior to using with Bezlio.
 
 ## Methods
 ### ExecuteBOMethod
