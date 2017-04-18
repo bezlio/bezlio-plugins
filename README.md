@@ -5,7 +5,7 @@ This repository holds each of the open source plugins for Bezlio.  Many of these
 
 * [Crystal Reports](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/CrystalReports/)
 
-*In Development* Allows you to run a Crystal Report from within your private network and have the results transmitted back to a Bezl either as a downloadable file or as data you can turn into something more interactive.
+Allows you to view any of your Crystal Reports within Bezlio as PDFs.  It supports prompting for any parameters you may have defined on a report and serves up content that has been freshly refreshed against your database.
 
 * [Dummy](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Dummy/)
 
@@ -48,7 +48,7 @@ Allows you to take any RSS feed and return it to a Bezl as data.
 Allows you to connect to an instance of Salesforce and interact with the data using simple query files.  As with the SQL Server and ODBC plugins, the administrator defines these permitted queries as .SQL files on the file system to to restrict exactly what users can do here.  This plugin also allows for the creations of objects in Salesforce.  This is particularly useful if you are using Bezlio to mash-up data and you might, for example, which to create an opportunity in Salesforce from data housed in another system or database.
 
 ## Compiling
-In order to compile this plugins project you will need either Visual Studio 2015 (preferred) or Visual Studio Code.  It may be possible to use older versions of Visual Studio or Visual Studio Community.  This has not yet been tested by the Bezlio team so if you have success please let us know so we can update this documentation.
+These plugins should already be included with the installer for BRDB, so you typically should not need to compile from source.  However, should you need to do so you will need either Visual Studio 2015 (preferred) or Visual Studio Code.  It may be possible to use older versions of Visual Studio or Visual Studio Community.  This has not yet been tested by the Bezlio team so if you have success please let us know so we can update this documentation.
 1. Start by downloading the source using the 'Clone or download' button and selecting 'Download ZIP'.  If you are familiar with Git you may also clone the repository which will allow you to submit updates if you are so inclined.
 2. Unzip the file and load it into your development environment.  
 

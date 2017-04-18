@@ -69,7 +69,7 @@ bezl.dataService.add(
 bezl.dataService.add(
     'UpdateBudget'
     ,'brdb'
-    ,'SQLServerODBC'
+    ,'SQLServer'
     ,'ExecuteNonQuery',
         { "Context": "Friendly Folder Name"
         , "Connection": "Friendly Connection Name"
