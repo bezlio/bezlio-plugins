@@ -43,6 +43,14 @@ Required Arguments:
 * Context - The name of the file system location as defined in the 'fileSystemLocations' section of the plugin config file.
 * FileName - Name of the file to retrieve.
 
+### WriteFile
+Writes a file provided in the Bytes argument (expected to be in a Base64 format).
+
+Required Arguments:
+* Context - The name of the file system location as defined in the 'fileSystemLocations' section of the plugin config file.
+* FileName - Name of the file to retrieve.
+* Bytes - Bytes of file to write.
+
 ## Usage
 This plugin can utilize connections made using either the wizard-based data connections tool in Bezlio or with Javascript code (which would give you the most flexibility).  We will document a few examples here in Javascript:
 
@@ -72,4 +80,30 @@ bezl.dataService.add(
         , 'FileName': 'MyFile.xls'
     }
     ,0);
+```
+
+*Write a file*
+This example would be added to ngOnInit and adds a signature pad to a Bezl.  The bezl.dataService line is where we are invoking this plugin.
+
+```
+require(['https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js'], function(functions) {
+  var signaturePad = new SignaturePad(document.getElementById('signature-pad'), {
+    backgroundColor: 'rgba(255, 255, 255, 0)',
+    penColor: 'rgb(0, 0, 0)'
+  });
+  
+  var saveButton = document.getElementById('save');
+  var cancelButton = document.getElementById('clear');
+
+  saveButton.addEventListener('click', function (event) {
+    var dataURI = signaturePad.toDataURL('image/tiff');
+    bezl.dataService.add('WriteFile','brdb','FileSystem','WriteFile',
+		{ "Context": "MyFiles", "FileName": "blah.tiff", "Bytes": dataURI.replace(/^data:image\/(png|jpg);base64,/, "") },0);
+  });
+
+  cancelButton.addEventListener('click', function (event) {
+    signaturePad.clear();
+  });
+
+});
 ```
