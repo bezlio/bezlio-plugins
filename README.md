@@ -43,6 +43,10 @@ Allows for you to connect to any ODBC data source defined on the BRDB server and
 
 Allows you to take any RSS feed and return it to a Bezl as data.
 
+* [SMTP](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/SMTP%20Plugin)
+
+Used to sent e-mails from within Bezlio.
+
 * [Salesforce](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Salesforce/)
 
 Allows you to connect to an instance of Salesforce and interact with the data using simple query files.  As with the SQL Server and ODBC plugins, the administrator defines these permitted queries as .SQL files on the file system to to restrict exactly what users can do here.  This plugin also allows for the creations of objects in Salesforce.  This is particularly useful if you are using Bezlio to mash-up data and you might, for example, which to create an opportunity in Salesforce from data housed in another system or database.
