@@ -105,7 +105,7 @@ namespace bezlio.rdb.plugins
 
                 // Return the data table
                 List<dynamic> result = new List<dynamic>();
-                foreach (var f in Directory.GetFiles(locationPath, @"*", SearchOption.AllDirectories))
+                foreach (var f in Directory.GetFiles(locationPath, @"*.rpt", SearchOption.AllDirectories))
                 {
                     CrystalReport cr = new CrystalReport(f);
                     FileInfo fi = new FileInfo(f);
