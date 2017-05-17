@@ -101,7 +101,7 @@ namespace bezlio.rdb.plugins
                 MailMessage message = new MailMessage();
                 message.From = new MailAddress(address.FromAddress, address.DisplayName);
                 
-                if (request.To != null && request.To.Contains(";"))
+                if (request.To.Contains(";"))
                 {
                     foreach (var a in request.To.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries))
                     {
@@ -112,7 +112,7 @@ namespace bezlio.rdb.plugins
                     message.To.Add(request.To);
                 }
 
-                if (request.Cc != null && request.Cc.ToString().Contains(";"))
+                if (request.Cc.ToString().Contains(";"))
                 {
                     foreach (var a in request.Cc.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries))
                     {
@@ -124,7 +124,7 @@ namespace bezlio.rdb.plugins
                     message.CC.Add(request.Cc);
                 }
 
-                if (request.Bcc != null && request.Bcc.ToString().Contains(";"))
+                if (request.Bcc.ToString().Contains(";"))
                 {
                     foreach (var a in request.Bcc.Split(new[] { ";" }, StringSplitOptions.RemoveEmptyEntries))
                     {
