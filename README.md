@@ -21,7 +21,7 @@ Allows you to execute any of the Epicor 9.05 (and presumably all version 9) Busi
 
 * [Excel](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Excel%20Plugin/)
 
-This plugin allows for the direct connection to Excel files without the steps involved in going through ODBC.  The ODBC layer provides for some additional flexibility (i.e. being able to write .SQL files to subselect and summarize data) but this plugin is great for users just getting started with Bezlio.
+This plugin allows for the direct connection to Excel files without the steps involved in going through ODBC.  The ODBC layer provides for some additional flexibility (i.e. being able to write .SQL files to subselect and summarize data) but this plugin is great for users just getting started with Bezlio.  This plugin also supports the write of data to a new or existing workbook.
 
 * [File System](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/FileSystem/)
 
