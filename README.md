@@ -19,7 +19,7 @@ Allows you to execute any of the Epicor 10 / 10.1 Business Objects, so anything 
 
 Allows you to execute any of the Epicor 9.05 (and presumably all version 9) Business Objects, so anything you can do in the full client you can do with this plugin.  All of the Epicor BO files are accessed via .Net reflection, making this plugin patch-level independent and forward-compatible so long as Epicor does not change the naming conventions for DLLs.
 
-* [Excel](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Excel/)
+* [Excel](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Excel%20Plugin/)
 
 This plugin allows for the direct connection to Excel files without the steps involved in going through ODBC.  The ODBC layer provides for some additional flexibility (i.e. being able to write .SQL files to subselect and summarize data) but this plugin is great for users just getting started with Bezlio.
 
