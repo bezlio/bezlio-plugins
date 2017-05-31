@@ -66,7 +66,16 @@ namespace bezlio.rdb.plugins
                     excelReader.IsFirstRowAsColumnNames = true;
                 }
 
-                response.Data = JsonConvert.SerializeObject(excelReader.AsDataSet().Tables[request.SheetName]);
+                int sheetNumber;
+                bool sheetNameIsNumber = int.TryParse(request.SheetName.ToString(), out sheetNumber);
+
+                if (string.IsNullOrEmpty(request.SheetName) && !sheetNameIsNumber)
+                    response.Data = JsonConvert.SerializeObject(excelReader.AsDataSet().Tables[0]);
+                else if (sheetNameIsNumber)
+                    response.Data = JsonConvert.SerializeObject(excelReader.AsDataSet().Tables[sheetNumber]);
+                else
+                    response.Data = JsonConvert.SerializeObject(excelReader.AsDataSet().Tables[request.SheetName]);
+
             } catch (Exception ex)
             {
                 response.Error = true;
