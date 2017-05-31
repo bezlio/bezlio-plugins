@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SMTP Plugin", "Plugins\SMTP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Excel Plugin", "Plugins\Excel Plugin\Excel Plugin.csproj", "{FBD42087-74E7-455A-AC3F-28253275F2E4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccordFramework Plugin", "Plugins\AccordFramework Plugin\AccordFramework Plugin.csproj", "{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -150,6 +152,14 @@ Global
 		{FBD42087-74E7-455A-AC3F-28253275F2E4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FBD42087-74E7-455A-AC3F-28253275F2E4}.Release|x86.ActiveCfg = Release|Any CPU
 		{FBD42087-74E7-455A-AC3F-28253275F2E4}.Release|x86.Build.0 = Release|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Debug|x86.Build.0 = Debug|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Release|x86.ActiveCfg = Release|Any CPU
+		{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
