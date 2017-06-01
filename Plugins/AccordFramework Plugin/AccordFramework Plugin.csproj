@@ -68,7 +68,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Bezlio Plugin Common\Bezlio Plugin Common.csproj">
+    <ProjectReference Include="..\..\Bezlio Plugin Common\Bezlio Plugin Common.csproj">
       <Project>{89966888-91FD-40F9-824C-F8B87B0207FD}</Project>
       <Name>Bezlio Plugin Common</Name>
     </ProjectReference>
