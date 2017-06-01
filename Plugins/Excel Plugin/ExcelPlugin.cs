@@ -96,55 +96,72 @@ namespace bezlio.rdb.plugins
             response.RequestId = rdbRequest.RequestId;
             response.DataType = "applicationJSON";
 
-            try
-            {
-                // Convert the SheetData object to CSV
-                DataTable dt = JsonConvert.DeserializeObject<DataTable>(request.SheetData);
-                StringBuilder sb = new StringBuilder();
-
-                // Define the format   
-                var format = new ExcelTextFormat();
-                format.Delimiter = '~';
-                format.DataTypes = new eDataTypes[dt.Columns.Count - 1];
-                format.EOL = "\r";              // DEFAULT IS "\r\n";
-                                                // format.TextQualifier = '"';
-
-                for (int i = 0; i < dt.Columns.Count - 1; i++)
-                {
-                    format.DataTypes[i] = eDataTypes.String;
-                }
-
-                // Column headers
-                IEnumerable<string> columnNames = dt.Columns.Cast<DataColumn>().
-                    Select(column => column.ColumnName);
-
-                if (request.FirstRowColumnNames == "Yes")
-                {
-                    sb.AppendLine(string.Join(",", columnNames));
-                }
-
-
-                // Rows
-                foreach (DataRow row in dt.Rows)
-                {
-                    IEnumerable<string> fields = row.ItemArray.Select(field => field.ToString());
-                    sb.AppendLine(string.Join("~", fields));
-                }
-
-                // Now write this to an Excel file
-                using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
-                {
-                    ExcelWorksheet worksheet = package.Workbook.Worksheets.Add(request.SheetName);
-                    worksheet.Cells["A1"].LoadFromText(sb.ToString(), format, OfficeOpenXml.Table.TableStyles.None, request.FirstRowColumnNames == "Yes");
-                    package.Save();
-                }
-            }
-            catch (Exception ex)
+            // Make sure this is being saved as an xlsx, otherwise throw back an error
+            if (!request.FileName.EndsWith("xlsx"))
             {
                 response.Error = true;
-                response.ErrorText = ex.Message;
-            }
+                response.ErrorText = "Invalid file name.  Must be an xlsx file.";
+            } else
+            {
+                try
+                {
+                    // Convert the SheetData object to CSV
+                    DataTable dt = JsonConvert.DeserializeObject<DataTable>(request.SheetData);
+                    StringBuilder sb = new StringBuilder();
 
+                    // Define the format   
+                    var format = new ExcelTextFormat();
+                    format.Delimiter = '~';
+                    format.DataTypes = new eDataTypes[dt.Columns.Count - 1];
+                    format.EOL = "\r";              // DEFAULT IS "\r\n";
+                                                    // format.TextQualifier = '"';
+
+                    for (int i = 0; i < dt.Columns.Count - 1; i++)
+                    {
+                        format.DataTypes[i] = eDataTypes.String;
+                    }
+
+                    // Column headers
+                    IEnumerable<string> columnNames = dt.Columns.Cast<DataColumn>().
+                        Select(column => column.ColumnName);
+
+                    if (request.FirstRowColumnNames == "Yes")
+                    {
+                        sb.AppendLine(string.Join("~", columnNames));
+                    }
+
+
+                    // Rows
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        IEnumerable<string> fields = row.ItemArray.Select(field => field.ToString());
+                        sb.AppendLine(string.Join("~", fields));
+                    }
+
+                    // Now write this to an Excel file
+                    using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
+                    {
+                        ExcelWorksheet worksheet;
+                        var existingWs = package.Workbook.Worksheets.Where(s => s.Name.Equals(request.SheetName));
+                        if (existingWs.Count() == 0)
+                        {
+                            worksheet = package.Workbook.Worksheets.Add(request.SheetName);
+                        }
+                        else
+                        {
+                            worksheet = existingWs.First();
+                        }
+
+                        worksheet.Cells["A1"].LoadFromText(sb.ToString().Substring(0, sb.ToString().Length - 2), format, OfficeOpenXml.Table.TableStyles.None, request.FirstRowColumnNames == "Yes");
+                        package.Save();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    response.Error = true;
+                    response.ErrorText = ex.Message;
+                }
+            }
 
             return response;
         }
