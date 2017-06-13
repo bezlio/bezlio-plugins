@@ -313,7 +313,27 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
 
                         if ((bool)dr["ActiveTrans"] == true)
                         {
+                            dr["RowMod"] = "U";
+                        }
+                    }
+
+                    // Now call EndActivity 
+                    bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
+
+                    // Now mark each LaborDtl in this dataset with a RowMod U
+                    foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
+                    {
+                        var drParts = ((DataSet)ds).Tables["LaborDtl"].Select("LaborDtlSeq = " + dr["LaborDtlSeq"]);
+
+                        if ((bool)dr["ActiveTrans"] == true)
+                        {
                             dr["EndActivity"] = true;
+
+
+                            if (string.IsNullOrEmpty(laborDtl["RequestMove"].ToString()))
+                                dr["RequestMove"] = false;
+                            else
+                                dr["RequestMove"] = laborDtl["RequestMove"];
 
                             if (drParts.Count() == 0)
                                 dr["LaborQty"] = laborDtl["LaborQty"];
@@ -324,8 +344,6 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                             if (dr["LaborType"].ToString() == "S")
                                 dr["SetupPctComplete"] = laborDtl["SetupPctComplete"];
 
-                            dr["RowMod"] = "U";
-
                             // If there are LaborPart rows in ds, apply the specified LaborQty to each.
                             // At some point we may wish to add LaborPart support to a Bezl, in which case
                             // we will want to revise this logic
@@ -335,10 +353,8 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                                 drPart["RowMod"] = "U";
                             }
                         }
-                    }
 
-                    // Now call EndActivity 
-                    bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
+                    }
 
                     // Update
                     bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
