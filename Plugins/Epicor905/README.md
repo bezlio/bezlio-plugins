@@ -77,3 +77,18 @@ bezl.dataService.add(
   }
   , 0);
 ```
+
+## Troubleshooting
+
+*Could not load file or assembly Epicor.Mfg.Core.Session.dll*
+If you receive an error message similar to the following in BRDB admin:
+
+```
+An exception occurred executing method.  Could not load file or assembly 'File:///G:\Epicor905\Epicor.Mfg.Core.Session.dll' or one of its dependencies.  Operation is not supported.  (Exception from HRESULT: 0x80131515)
+``` 
+
+This is due to a file permissions issue.  The BRDB service is by default set to run as 'Local System' which may lack the permissions to get to the noted location.  In order to resolve this error try the following fixes:
+
+1. Open the file properties for C:\Program Files (x86)\Bezlio Remote Data Broker\Bezlio Remote Data Broker.exe and check 'Run this program as an administrator' on the 'Compatibility' tab if the noted path is on a local drive to where BRDB is installed.  Restart the service and try again.
+
+2. If the noted path is on a network drive, change the user under which 'Bezlio Remote Data Broker' runs to an Active Directory user having permissions to the share location.
