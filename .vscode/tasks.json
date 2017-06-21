@@ -15,7 +15,11 @@
             // Show the output window only if unrecognized errors occur.
             "showOutput": "silent",
             // Use the standard MS compiler pattern to detect errors, warnings and infos
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "args": [
+                "/p:Configuration=Release",
+                "/p:Platform=x86"
+            ]
         }
     ]
 }
