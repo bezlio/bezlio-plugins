@@ -35,7 +35,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccordFramework Plugin", "P
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "REST Plugin", "Plugins\REST Plugin\REST Plugin.csproj", "{CAD3196C-749D-44E7-A42C-62960AF179C7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Office_365", "..\..\Office_365\Office_365\Office_365.csproj", "{C378D230-2DDC-407D-B26A-CB65E78C79E3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Office_365", "Plugins\Office_365\Office_365.csproj", "{C378D230-2DDC-407D-B26A-CB65E78C79E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
