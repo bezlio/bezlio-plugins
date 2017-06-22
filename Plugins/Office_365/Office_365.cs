@@ -99,9 +99,6 @@ namespace bezlio.rdb.plugins
             }
             catch (Exception ex)
             {
-                System.IO.File.WriteAllText(@"C:\Bezlio_Exports\error.txt", ex.Message);
-                System.IO.File.WriteAllText(@"C:\Bezlio_Exports\inner_exception.txt", ex.InnerException.ToString());
-
                 if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
                     response.ErrorText += ex.InnerException.ToString();
 
@@ -140,9 +137,6 @@ namespace bezlio.rdb.plugins
             }
             catch (Exception ex)
             {
-                System.IO.File.WriteAllText(@"C:\Bezlio_Exports\error.txt", ex.Message);
-                System.IO.File.WriteAllText(@"C:\Bezlio_Exports\inner_exception.txt", ex.InnerException.ToString());
-
                 if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
                     response.ErrorText += ex.InnerException.ToString();
 
@@ -187,9 +181,6 @@ namespace bezlio.rdb.plugins
             }
             catch (Exception ex)
             {
-                System.IO.File.WriteAllText(@"C:\Bezlio_Exports\error.txt", ex.Message);
-                System.IO.File.WriteAllText(@"C:\Bezlio_Exports\inner_exception.txt", ex.InnerException.ToString());
-
                 if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
                     response.ErrorText += ex.InnerException.ToString();
 
