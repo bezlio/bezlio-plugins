@@ -161,7 +161,7 @@ namespace bezlio.rdb.plugins
                     object returnObj = Activator.CreateInstance(bo.GetType().GetMethod(request.BOMethodName.ToString()).ReturnType);
                     returnObj = bo.GetType().GetMethod(request.BOMethodName.ToString()).Invoke(bo, parameters);
 
-                    if (request.BOName.ToString() == "DynamicQuery")
+                    if (request.BOName.ToString() == "DynamicQuery" && request.BOMethodName.ToString() == "ExecuteByID")
                     {
                         DataTable dt = ((DataSet)returnObj).Tables["Results"];
                         foreach (DataRow displayFields in ((DataSet)returnObj).Tables["DisplayFields"].Rows)
