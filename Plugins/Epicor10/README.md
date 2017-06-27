@@ -6,6 +6,11 @@ Allows you to execute any of the Epicor 10 / 10.1 Business Objects, so anything 
 ## Installation
 See generic plugin instructions at https://github.com/bezlio/bezlio-plugins.
 
+In supplement to these steps, note the following additional details:
+
+* You should copy the file Epicor.ServiceModel.dll from your Epicor client directory to the Bezlio install directory.  You will need to stop the service before Windows will allow you to do this.
+* In your Epicor client folder there is a config subfolder.  We currently require that you have a default.sysconfig within this file, although we do not pull things like the AppServerURL from there.  Just copy one of your existing files and rename it.
+
 ## Configuration
 In order to configure this plugin you will need to edit the Epicor10.dll.config file in the plugins directory with the text editor of your choice.  Within this file, revise according to these guidelines:
 * The 'connections' section (which starts with <setting name="connections" serializeAs="String"> and ends with </setting>) defines each of the connections to Epicor you wish to expose to Bezlio users.  When they chose to interact with this plugin, they are going to simply call the connection by connectionName and will never know the app server URL, user name, or password.  The entries defined in here are in JSON format separated by commas.  
