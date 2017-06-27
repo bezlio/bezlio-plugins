@@ -58,9 +58,9 @@ namespace bezlio.rdb.plugins.Properties {
                   ]
                 
 ")]
-        public string connections {
+        public string connection {
             get {
-                return ((string)(this["connections"]));
+                return ((string)(this["connection"]));
             }
         }
     }
