@@ -49,7 +49,7 @@ Allows you to take any RSS feed and return it to a Bezl as data.
 
 * [SMTP](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/SMTP%20Plugin)
 
-Used to sent e-mails from within Bezlio.
+Used to send e-mails from within Bezlio.
 
 * [Salesforce](https://github.com/bezlio/bezlio-plugins/tree/master/Plugins/Salesforce/)
 
