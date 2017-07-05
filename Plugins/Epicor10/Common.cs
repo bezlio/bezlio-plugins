@@ -91,8 +91,17 @@ namespace bezlio.rdb.plugins
         public static object GetBusinessObjectDataSet(string boName, string dataSetName, ref RemoteDataBrokerResponse response)
         {
             string clientPath = Config.GetClientPath(ref response);
-            Assembly genericAssembly = Assembly.LoadFrom(clientPath + @"\Erp.Contracts.BO." + boName + ".dll");
-            return Activator.CreateInstance(genericAssembly.GetType(dataSetName));
+
+            if (File.Exists(clientPath + @"\Erp.Contracts.BO." + boName + ".dll"))
+            {
+                Assembly genericAssembly = Assembly.LoadFrom(clientPath + @"\Erp.Contracts.BO." + boName + ".dll");
+                return Activator.CreateInstance(genericAssembly.GetType(dataSetName));
+            } else
+            {
+                Assembly genericAssembly = Assembly.LoadFrom(clientPath + @"\Ice.Contracts.BO." + boName + ".dll");
+                return Activator.CreateInstance(genericAssembly.GetType(dataSetName));
+            }
+
         }
     }
 }

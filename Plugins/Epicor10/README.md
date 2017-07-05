@@ -28,6 +28,15 @@ Required Arguments:
 * BOMethodName - The name of the BO method to execute (for example 'UpdateExt').
 * Parameters - A key / value pair list of parameters to pass into this BO method.
 
+### ExecuteBAQ
+This method allows you to easily run an Epicor BAQ.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* BaqId - The name of the Epicor BAQ.
+* Parameters - A key / value pair list of parameters for this BAQ.
+
 ### JobAdjustment_LaborAdj
 Perform a labor adjustment on a job.  This is a helper method (one of many to come) that simplifies what could have been done using ExecuteBOMethod, but would have taken several steps.
 
@@ -52,13 +61,11 @@ bezl.dataService.add(
   'MyBAQResults'
   ,'brdb'
   ,'Epicor10'
-  ,'ExecuteBOMethod'
+  ,'ExecuteBAQ'
   , 
     {"Connection": "Friendly Connection Name"
     , "Company": "Your Epicor Company ID"
-    , "BOName": "DynamicQuery"
-    , "BOMethodName": "ExecuteByID"
-    , "Parameters": [{ "Key": "queryID", "Value": "MyTestBAQ" }] }
+    , "BaqId": "MyTestBAQ"
   , 0);
 ```
 

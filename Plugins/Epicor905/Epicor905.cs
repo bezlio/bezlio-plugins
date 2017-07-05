@@ -25,17 +25,30 @@ namespace bezlio.rdb.plugins
     }
 
 
+    public class Epicor905BaqDataModel
+    {
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public string BaqId { get; set; }
+        public List<KeyValuePair<string, string>> Parameters { get; set; }
+
+        public Epicor905BaqDataModel()
+        {
+            Parameters = new List<KeyValuePair<string, string>>();
+        }
+    }
+
+
     public class Epicor905
     {
         public static object GetArgs()
         {
-            Epicor905DataModel model = new Epicor905DataModel();
+            Epicor905BaqDataModel model = new Epicor905BaqDataModel();
             model.Connection = GetConnectionNames();
             model.Company = "Company ID";
-            model.BOName = GetBONames();
-            model.BOMethodName = "Method Name (i.e. ExecuteByID)";
+            model.BaqId = "BAQ ID";
             model.Parameters = new List<KeyValuePair<string, string>>();
-            model.Parameters.Add(new KeyValuePair<string, string>("pcQueryID", "BAQ ID"));
+            model.Parameters.Add(new KeyValuePair<string, string>("Parameter ID", "BAQ ID"));
 
             return model;
         }
@@ -95,6 +108,49 @@ namespace bezlio.rdb.plugins
             result.TrimEnd(',');
             result += "]";
             return result;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> ExecuteBAQ(RemoteDataBrokerRequest rdbRequest)
+        {
+            Epicor905BaqDataModel request = JsonConvert.DeserializeObject<Epicor905BaqDataModel>(rdbRequest.Data);
+
+            // Create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            // Establish a connection to Epicor
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+
+            try
+            {
+                // Load the referenced BO
+                object bo = Common.GetBusinessObject(epicorConn, "DynamicQuery", ref response);
+                object query = Common.GetBusinessObjectDataSet("DynamicQuery", "Epicor.Mfg.BO.QueryExecutionDataSet", ref response);
+
+                // Fill in the parameters
+                foreach (var p in request.Parameters)
+                {
+                    ((DataSet)query).Tables["ExecutionParameter"].Rows.Add(new object[] { p.Key, p.Value, "String", false, null, "A", null });
+                }
+
+                DataSet ds = (DataSet)bo.GetType().GetMethod("ExecuteByIDParametrized").Invoke(bo, new object[] { request.BaqId, query, "", 0, false });
+                response.Data = JsonConvert.SerializeObject(ds.Tables["Results"]);
+
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
+                response.Error = true;
+                response.ErrorText += ex.Message;
+            } 
+            finally { Common.CloseEpicorConnection(epicorConn, ref response); }
+
+            // Return response object
+            return response;
+
         }
 
         // This method allows you to execute any Epicor BO method.  This is helpful for when you want to call a
@@ -161,7 +217,7 @@ namespace bezlio.rdb.plugins
                     object returnObj = Activator.CreateInstance(bo.GetType().GetMethod(request.BOMethodName.ToString()).ReturnType);
                     returnObj = bo.GetType().GetMethod(request.BOMethodName.ToString()).Invoke(bo, parameters);
 
-                    if (request.BOName.ToString() == "DynamicQuery" && request.BOMethodName.ToString() == "ExecuteByID")
+                    if (request.BOName.ToString() == "DynamicQuery" && (request.BOMethodName.ToString() == "ExecuteByID" || request.BOMethodName.ToString() == "Execute"))
                     {
                         DataTable dt = ((DataSet)returnObj).Tables["Results"];
                         foreach (DataRow displayFields in ((DataSet)returnObj).Tables["DisplayFields"].Rows)
