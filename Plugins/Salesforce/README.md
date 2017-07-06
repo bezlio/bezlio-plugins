@@ -30,6 +30,24 @@ Required Arguments:
 * ObjectType - The type of object within Salesforce this is to create (i.e. Account).
 * Parameters - A key / value pair array for each of the properties to be associated to this new object being created.
 
+### UpdateObject
+Updates an object in Salesforce of the given type with the properties as specified in the parameters argument.
+
+Required Arguments:
+* Context - The name of the SQL file location as defined in the 'sqlFileLocations' section of the plugin config file.
+* Connection - The name of the connection as defined in the 'connections' section of the plugin config file.
+* ObjectType - The type of object within Salesforce this is to create (i.e. Account).
+* Parameters - A key / value pair array for each of the properties to be associated to this new object being created.  It is crucial that one of these pairs are for the record ID to be updated.
+
+### DeleteObject
+Updates an object in Salesforce of the given type with the properties as specified in the parameters argument.
+
+Required Arguments:
+* Context - The name of the SQL file location as defined in the 'sqlFileLocations' section of the plugin config file.
+* Connection - The name of the connection as defined in the 'connections' section of the plugin config file.
+* ObjectType - The type of object within Salesforce this is to create (i.e. Account).
+* Parameters - A key / value pair array for each of the properties to be associated to this new object being created.  It is crucial that one of these pairs are for the record ID to be updated.
+
 ## Usage
 After the plugin is configured for queries, you are going to first need to create .SQL files that define the permitted queries for Salesforce.  For example:
 
