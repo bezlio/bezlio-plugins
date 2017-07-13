@@ -99,7 +99,7 @@ namespace bezlio.rdb.plugins
                                     List<object> objList = new List<object>();
                                     foreach (var p in parms) {
                                         // Convert it to the type that the parameter is looking for
-                                        objList.Add(Convert.ChangeType(o[p.Name], p.ParameterType));
+                                        objList.Add(Convert.ChangeType(((JProperty)o.First).Value, p.ParameterType));
                                     }
                                     // Invoke our method
                                     method.Invoke(obj, objList.ToArray());
