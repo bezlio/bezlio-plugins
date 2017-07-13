@@ -85,7 +85,7 @@ namespace bezlio.rdb.plugins
                     } else {
                         // If it is not merge, we are calling these actions
                         // Start by parsing the value we received
-                        dynamic o = JObject.Parse(action.Value);
+                        JContainer o = JObject.Parse(action.Value);
                         // Now we are running get methods (since there are multiple signitures per call
                         foreach (var method in type.GetMethods()) {
                             // First filter by name
