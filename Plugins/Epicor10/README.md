@@ -52,6 +52,31 @@ Required Arguments:
 * Complete - Job complete flag.
 * OpComplete - Operation complete flag.
 
+### Materials_IssueReturnToJob
+This helper method allows you to perform multiple material issues in the same transaction while also dynamically adding materials to jobs.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* AddMaterials - true / false to determine if you want materials to be dynamically added to job.
+* Transactions - An array of objects using the following structure to represent the desired transactions:
+
+```
+{
+      JobNum			: 	m.job,
+      AssemblySeq		:	m.asm,
+      MtlSeq			:	m.mtlSeq,
+      TranType			:	'STK-MTL',
+      PartNum			:	m.partNum,
+      TranQty			:	i.qty,
+      UOM				:	i.uom,
+      FromWarehouseCode	:	i.whse,
+      FromBinNum		:	i.bin,
+      ToWarehouseCode	:	i.whse,
+      ToBinNum			:	i.bin
+}
+```
+
 ## Usage
 Within Bezlio, this plugin can be used to call any Epicor BO method.  These connections can be made using either the wizard-based data connections tool in Bezlio or with Javascript code (which would give you the most flexibility).  We will document a few examples here in Javascript:
 
@@ -127,3 +152,42 @@ Some of the things you may wish to do in Epicor may involve a number of consecut
         , 0);
   };
 ```
+
+Issue a variety of materials to one or many jobs:
+
+```
+var transactions = [];
+bezl.vars.materials.forEach(m => {
+  m.issuePending.forEach(i => {
+    
+	transactions.push({
+      JobNum			: 	m.job,
+      AssemblySeq		:	m.asm,
+      MtlSeq			:	m.mtlSeq,
+      TranType			:	'STK-MTL',
+      PartNum			:	m.partNum,
+      TranQty			:	i.qty,
+      UOM				:	i.uom,
+      FromWarehouseCode	:	i.whse,
+      FromBinNum		:	i.bin,
+      ToWarehouseCode	:	i.whse,
+      ToBinNum			:	i.bin
+    });
+  });
+  
+});
+
+bezl.dataService.add(
+  'IssueMaterials'
+  , 'brdb'
+  , 'Epicor10'
+  , 'Materials_IssueReturnToJob'
+  ,
+  {
+    'Connection'	: 'Epicor 10 AE'
+    , 'Company'		: 'EPIC06'
+    , 'AddMaterials': true
+    , 'Transactions': transactions
+  }
+  , 0);
+  ```
