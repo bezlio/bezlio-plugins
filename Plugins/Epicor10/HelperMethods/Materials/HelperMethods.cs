@@ -104,6 +104,13 @@ namespace bezlio.rdb.plugins.HelperMethods.Materials
                         ((DataSet)ds).Tables["IssueReturn"].Rows[0]["FromBinNum"] = t.FromBinNum;
                         ((DataSet)ds).Tables["IssueReturn"].Rows[0]["ToWarehouseCode"] = t.ToWarehouseCode;
                         ((DataSet)ds).Tables["IssueReturn"].Rows[0]["ToBinNum"] = t.ToBinNum;
+                        ((DataSet)ds).Tables["IssueReturn"].Rows[0]["ToJobSeqPartNum"] = t.PartNum;
+
+                        // Pre-Perform the issue
+                        bool requiresUserInput = false;
+                        issueReturn.GetType().GetMethod("PrePerformMaterialMovement").Invoke(issueReturn, new object[] { ds,
+                            requiresUserInput
+                        });
 
                         // Perform the issue
                         string legalNumberMessage = "";
