@@ -49,6 +49,14 @@ namespace bezlio.rdb.plugins
 
             try
             {
+                // First use EPPlus to calculate all formulas so the user is getting fresh data
+                using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
+                {
+                    package.Workbook.Calculate();
+                    package.Save();
+                }
+
+                // Now grab the data
                 FileStream stream = File.Open(request.FileName, FileMode.Open, FileAccess.Read);
                 IExcelDataReader excelReader;
 
