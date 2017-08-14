@@ -1,11 +1,8 @@
-﻿using Excel;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using OfficeOpenXml;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
 
@@ -49,40 +46,114 @@ namespace bezlio.rdb.plugins
 
             try
             {
+                DataTable dt = new DataTable();
+
                 // First use EPPlus to calculate all formulas so the user is getting fresh data
                 using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
                 {
-                    package.Workbook.Calculate();
-                    package.Save();
+                    var wks = package.Workbook.Worksheets.Where(s => s.Name.Equals(request.SheetName));
+                    if (wks.Count() > 0)
+                    {
+                        var worksheet = wks.First();
+                        worksheet.Calculate();
+
+                        //check if the worksheet is completely empty
+                        if (worksheet.Dimension == null)
+                        {
+                            response.Error = true;
+                            response.ErrorText = "Empty Worksheet";
+                        }
+
+                        //add the columns to the datatable
+                        for (int j = worksheet.Dimension.Start.Column; j <= worksheet.Dimension.End.Column; j++)
+                        {
+                            string columnName = "Column " + j;
+                            var excelCell = worksheet.Cells[1, j].Value;
+
+                            if (excelCell != null)
+                            {
+                                var excelCellDataType = excelCell;
+
+                                //if there is a headerrow, set the next cell for the datatype and set the column name
+                                if (request.FirstRowColumnNames == "Yes")
+                                {
+                                    excelCellDataType = worksheet.Cells[2, j].Value;
+
+                                    columnName = excelCell.ToString();
+
+                                    //check if the column name already exists in the datatable, if so make a unique name
+                                    if (dt.Columns.Contains(columnName) == true)
+                                    {
+                                        columnName = columnName + "_" + j;
+                                    }
+                                }
+
+                                //try to determine the datatype for the column (by looking at the next column if there is a header row)
+                                if (excelCellDataType is DateTime)
+                                {
+                                    dt.Columns.Add(columnName, typeof(DateTime));
+                                }
+                                else if (excelCellDataType is Boolean)
+                                {
+                                    dt.Columns.Add(columnName, typeof(Boolean));
+                                }
+                                else if (excelCellDataType is Double)
+                                {
+                                    //determine if the value is a decimal or int by looking for a decimal separator
+                                    //not the cleanest of solutions but it works since excel always gives a double
+                                    if (excelCellDataType.ToString().Contains(".") || excelCellDataType.ToString().Contains(","))
+                                    {
+                                        dt.Columns.Add(columnName, typeof(Decimal));
+                                    }
+                                    else
+                                    {
+                                        dt.Columns.Add(columnName, typeof(Int64));
+                                    }
+                                }
+                                else
+                                {
+                                    dt.Columns.Add(columnName, typeof(String));
+                                }
+                            }
+                            else
+                            {
+                                dt.Columns.Add(columnName, typeof(String));
+                            }
+                        }
+
+                        //start adding data the datatable here by looping all rows and columns
+                        for (int i = worksheet.Dimension.Start.Row + Convert.ToInt32(request.FirstRowColumnNames == "Yes"); i <= worksheet.Dimension.End.Row; i++)
+                        {
+                            //create a new datatable row
+                            DataRow row = dt.NewRow();
+
+                            //loop all columns
+                            for (int j = worksheet.Dimension.Start.Column; j <= worksheet.Dimension.End.Column; j++)
+                            {
+                                var excelCell = worksheet.Cells[i, j].Value;
+
+                                //add cell value to the datatable
+                                if (excelCell != null)
+                                {
+                                    try
+                                    {
+                                        row[j - 1] = excelCell;
+                                    }
+                                    catch
+                                    {
+                                        response.Error = true;
+                                        response.ErrorText += "Row " + (i - 1) + ", Column " + j + ". Invalid " + dt.Columns[j - 1].DataType.ToString().Replace("System.", "") + " value:  " + excelCell.ToString() + "<br>";
+                                    }
+                                }
+                            }
+
+                            //add the new row to the datatable
+                            dt.Rows.Add(row);
+                        }
+                    }
                 }
 
-                // Now grab the data
-                FileStream stream = File.Open(request.FileName, FileMode.Open, FileAccess.Read);
-                IExcelDataReader excelReader;
-
-                if (request.FileName.EndsWith("xls"))
-                {
-                    excelReader = ExcelReaderFactory.CreateBinaryReader(stream);
-                }
-                else
-                {
-                    excelReader = ExcelReaderFactory.CreateOpenXmlReader(stream);
-                }
-
-                if (request.FirstRowColumnNames == "Yes")
-                {
-                    excelReader.IsFirstRowAsColumnNames = true;
-                }
-
-                int sheetNumber;
-                bool sheetNameIsNumber = int.TryParse(request.SheetName.ToString(), out sheetNumber);
-
-                if (string.IsNullOrEmpty(request.SheetName) && !sheetNameIsNumber)
-                    response.Data = JsonConvert.SerializeObject(excelReader.AsDataSet().Tables[0]);
-                else if (sheetNameIsNumber)
-                    response.Data = JsonConvert.SerializeObject(excelReader.AsDataSet().Tables[sheetNumber]);
-                else
-                    response.Data = JsonConvert.SerializeObject(excelReader.AsDataSet().Tables[request.SheetName]);
+                response.Data = JsonConvert.SerializeObject(dt);
 
             } catch (Exception ex)
             {
