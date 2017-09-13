@@ -4,12 +4,13 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Linq;
 
-using bezlio.rdb.plugins.ReportService2010;
-using bezlio.rdb.plugins.ReportExecution2005;
 using System.Net;
 using System.Xml.Linq;
 using System.IO;
 using System.Reflection;
+
+using RptExecSvc;
+using ReportService;
 
 namespace bezlio.rdb.plugins
 {
@@ -41,7 +42,7 @@ namespace bezlio.rdb.plugins
         public static List<FileLocation> GetLocations()
         {
             string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SSRSPlugin.dll.config";
+            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
             string strLocations = "";
 
             XDocument xConfig = XDocument.Load(cfgPath);
@@ -68,7 +69,7 @@ namespace bezlio.rdb.plugins
         public static SSRSConnectionInfo GetConnection()
         {
             string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SSRSPlugin.dll.config";
+            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
             string strConnection = "";
             
             if (File.Exists(cfgPath))
@@ -99,15 +100,20 @@ namespace bezlio.rdb.plugins
             try
             {
                 //create network credentials to use for auth
-                SSRSConnectionInfo connectionInfo = GetConnection();
-                NetworkCredential credentials = new NetworkCredential();
-                credentials.Domain = connectionInfo.Domain;
-                credentials.UserName = connectionInfo.UserName;
-                credentials.Password = connectionInfo.Password;
+                //SSRSConnectionInfo connectionInfo = GetConnection();
+                //NetworkCredential credentials = new NetworkCredential();
+                //credentials.Domain = connectionInfo.Domain;
+                //credentials.UserName = connectionInfo.UserName;
+                //credentials.Password = connectionInfo.Password;
 
                 //instantiate SSRS Report Service and apply credentials
                 ssrsSvc = new ReportingService2010();
-                ssrsSvc.Credentials = credentials;
+                System.Net.NetworkCredential cred = new System.Net.NetworkCredential();
+                cred.Domain = "saberlogicllc";
+                cred.UserName = "administrator";
+                cred.Password = "d7cGydCd014lfKHwjuuz";
+
+                ssrsSvc.Credentials = cred;
 
                 List<dynamic> result = new List<dynamic>();
                 foreach(var rpt in ssrsSvc.ListChildren("/", true))
@@ -128,6 +134,35 @@ namespace bezlio.rdb.plugins
 
                 response.Error = true;
                 response.ErrorText = ex.Message;
+            }
+
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> ReturnAsPDF(RemoteDataBrokerRequest rdbRequest)
+        {
+            SSRSDataModel request = JsonConvert.DeserializeObject<SSRSDataModel>(rdbRequest.Data);
+
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = true;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+            
+            try
+            {
+                SSRSReport ssrs = new SSRSReport();
+
+                response.Data = JsonConvert.SerializeObject(ssrs.GetAsPDF());
+            }
+            catch (Exception ex)
+            {
+                if (!String.IsNullOrEmpty(ex.Message))
+                {
+                    response.ErrorText += ex.InnerException;   
+                }
+
+                response.Error = true;
+                response.ErrorText += ex.Message;
             }
 
             return response;

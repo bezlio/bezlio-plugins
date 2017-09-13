@@ -25,26 +25,6 @@ namespace bezlio.rdb.plugins.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.WebServiceUrl)]
-        [global::System.Configuration.DefaultSettingValueAttribute("http://dev-sql2014:80/ReportServer/ReportService2010.asmx")]
-        public string SSRS_Plugin_ReportService2010_ReportingService2010 {
-            get {
-                return ((string)(this["SSRS_Plugin_ReportService2010_ReportingService2010"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.SpecialSettingAttribute(global::System.Configuration.SpecialSetting.WebServiceUrl)]
-        [global::System.Configuration.DefaultSettingValueAttribute("http://dev-sql2014:80/ReportServer/ReportExecution2005.asmx")]
-        public string SSRS_Plugin_ReportExecution2005_ReportExecutionService {
-            get {
-                return ((string)(this["SSRS_Plugin_ReportExecution2005_ReportExecutionService"]));
-            }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute(@"
                   [
                   {

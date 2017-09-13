@@ -48,12 +48,12 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Bezlio Plugin Common">
-      <HintPath>..\..\..\..\Bezlio-Conference\bezlio-plugins\Bezlio Plugin Common\bin\x86\Release\Bezlio Plugin Common.dll</HintPath>
-    </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="SSRS_Report_Execution">
+      <HintPath>..\..\..\..\SSRS_Report_Execution\SSRS_Report_Execution\bin\x86\Release\SSRS_Report_Execution.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -78,16 +78,7 @@
     <Compile Include="SSRSConnection.cs" />
     <Compile Include="SSRSPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Web References\ReportExecution2005\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.map</DependentUpon>
-    </Compile>
-    <Compile Include="Web References\ReportService2010\Reference.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Reference.map</DependentUpon>
-    </Compile>
+    <Compile Include="SSRSReport.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -98,124 +89,6 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
-    <None Include="Web References\ReportExecution2005\DocumentMapNode1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportExecution2005\ExecutionInfo1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportExecution2005\ExecutionInfo21.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportExecution2005\Extension1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportExecution2005\Reference.map">
-      <Generator>MSDiscoCodeGenerator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-    <None Include="Web References\ReportExecution2005\ReportExecution2005.wsdl" />
-    <None Include="Web References\ReportExecution2005\Warning1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ActiveState1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\CacheRefreshPlan1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\CacheRefreshPlanState1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\CatalogItem1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\DataRetrievalPlan1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\DataSetDefinition1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\DataSource1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\DataSourceDefinition1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\DataSourcePrompt1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Event1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ExpirationDefinition1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Extension1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ExtensionParameter1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ExtensionSettings1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ItemHistorySnapshot1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ItemParameter1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ItemReferenceData1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Job1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ModelCatalogItem1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ModelDrillthroughReport1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ModelItem1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ParameterValue1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ParameterValueOrFieldReference1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Policy1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Property1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Reference.map">
-      <Generator>MSDiscoCodeGenerator</Generator>
-      <LastGenOutput>Reference.cs</LastGenOutput>
-    </None>
-    <None Include="Web References\ReportService2010\reportservice2010.wsdl" />
-    <None Include="Web References\ReportService2010\Role1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Schedule1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\ScheduleDefinitionOrReference1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Subscription1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Task1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
-    <None Include="Web References\ReportService2010\Warning1.datasource">
-      <DependentUpon>Reference.map</DependentUpon>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
@@ -224,28 +97,10 @@
     <WebReferences Include="Web References\" />
   </ItemGroup>
   <ItemGroup>
-    <WebReferenceUrl Include="http://dev-sql2014/ReportServer/ReportExecution2005.asmx">
-      <UrlBehavior>Dynamic</UrlBehavior>
-      <RelPath>Web References\ReportExecution2005\</RelPath>
-      <UpdateFromURL>http://dev-sql2014/ReportServer/ReportExecution2005.asmx</UpdateFromURL>
-      <ServiceLocationURL>
-      </ServiceLocationURL>
-      <CachedDynamicPropName>
-      </CachedDynamicPropName>
-      <CachedAppSettingsObjectName>Settings</CachedAppSettingsObjectName>
-      <CachedSettingsPropName>SSRS_Plugin_ReportExecution2005_ReportExecutionService</CachedSettingsPropName>
-    </WebReferenceUrl>
-    <WebReferenceUrl Include="http://dev-sql2014/reportserver/reportservice2010.asmx">
-      <UrlBehavior>Dynamic</UrlBehavior>
-      <RelPath>Web References\ReportService2010\</RelPath>
-      <UpdateFromURL>http://dev-sql2014/reportserver/reportservice2010.asmx</UpdateFromURL>
-      <ServiceLocationURL>
-      </ServiceLocationURL>
-      <CachedDynamicPropName>
-      </CachedDynamicPropName>
-      <CachedAppSettingsObjectName>Settings</CachedAppSettingsObjectName>
-      <CachedSettingsPropName>SSRS_Plugin_ReportService2010_ReportingService2010</CachedSettingsPropName>
-    </WebReferenceUrl>
+    <ProjectReference Include="..\..\Bezlio Plugin Common\Bezlio Plugin Common.csproj">
+      <Project>{89966888-91fd-40f9-824c-f8b87b0207fd}</Project>
+      <Name>Bezlio Plugin Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
