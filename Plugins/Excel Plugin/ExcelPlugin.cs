@@ -14,6 +14,7 @@ namespace bezlio.rdb.plugins
         public string SheetName { get; set; }
         public string FirstRowColumnNames { get; set; }
         public string SheetData { get; set; }
+        public string AllStrings { get; set; }
 
         public ExcelDataModel() { }
     }
@@ -28,6 +29,7 @@ namespace bezlio.rdb.plugins
             model.SheetName = "Sheet name";
             model.FirstRowColumnNames = "[Yes,No]";
             model.SheetData = "Data to be written (only used for WriteFile)";
+            model.AllStrings = "[Yes,No]";
 
             return model;
         }
@@ -52,25 +54,39 @@ namespace bezlio.rdb.plugins
                 using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
                 {
                     var wks = package.Workbook.Worksheets.Where(s => s.Name.Equals(request.SheetName));
+                    ExcelWorksheet worksheet;
                     if (wks.Count() > 0)
                     {
-                        var worksheet = wks.First();
-                        worksheet.Calculate();
+                        worksheet = wks.First();
+                    }
+                    else
+                    {
+                        // Excel index starts at 1...
+                        worksheet = package.Workbook.Worksheets[1];
+                    }
 
-                        //check if the worksheet is completely empty
-                        if (worksheet.Dimension == null)
+                    worksheet.Calculate();
+
+                    //check if the worksheet is completely empty
+                    if (worksheet.Dimension == null)
+                    {
+                        response.Error = true;
+                        response.ErrorText = "Empty Worksheet";
+                    }
+
+                    //add the columns to the datatable
+                    for (int j = worksheet.Dimension.Start.Column; j <= worksheet.Dimension.End.Column; j++)
+                    {
+                        string columnName = "Column " + j;
+                        var excelCell = worksheet.Cells[1, j].Value;
+
+                        if (excelCell != null)
                         {
-                            response.Error = true;
-                            response.ErrorText = "Empty Worksheet";
-                        }
-
-                        //add the columns to the datatable
-                        for (int j = worksheet.Dimension.Start.Column; j <= worksheet.Dimension.End.Column; j++)
-                        {
-                            string columnName = "Column " + j;
-                            var excelCell = worksheet.Cells[1, j].Value;
-
-                            if (excelCell != null)
+                            if (request.AllStrings == "Yes")
+                            {
+                                dt.Columns.Add(columnName, typeof(String));
+                            }
+                            else
                             {
                                 var excelCellDataType = excelCell;
 
@@ -115,47 +131,49 @@ namespace bezlio.rdb.plugins
                                     dt.Columns.Add(columnName, typeof(String));
                                 }
                             }
-                            else
-                            {
-                                dt.Columns.Add(columnName, typeof(String));
-                            }
                         }
-
-                        //start adding data the datatable here by looping all rows and columns
-                        for (int i = worksheet.Dimension.Start.Row + Convert.ToInt32(request.FirstRowColumnNames == "Yes"); i <= worksheet.Dimension.End.Row; i++)
+                        else
                         {
-                            //create a new datatable row
-                            DataRow row = dt.NewRow();
-
-                            //loop all columns
-                            for (int j = worksheet.Dimension.Start.Column; j <= worksheet.Dimension.End.Column; j++)
-                            {
-                                var excelCell = worksheet.Cells[i, j].Value;
-
-                                //add cell value to the datatable
-                                if (excelCell != null)
-                                {
-                                    try
-                                    {
-                                        row[j - 1] = excelCell;
-                                    }
-                                    catch
-                                    {
-                                        response.Error = true;
-                                        response.ErrorText += "Row " + (i - 1) + ", Column " + j + ". Invalid " + dt.Columns[j - 1].DataType.ToString().Replace("System.", "") + " value:  " + excelCell.ToString() + "<br>";
-                                    }
-                                }
-                            }
-
-                            //add the new row to the datatable
-                            dt.Rows.Add(row);
+                            dt.Columns.Add(columnName, typeof(String));
                         }
                     }
+
+                    //start adding data the datatable here by looping all rows and columns
+                    for (int i = worksheet.Dimension.Start.Row + Convert.ToInt32(request.FirstRowColumnNames == "Yes"); i <= worksheet.Dimension.End.Row; i++)
+                    {
+                        //create a new datatable row
+                        DataRow row = dt.NewRow();
+
+                        //loop all columns
+                        for (int j = worksheet.Dimension.Start.Column; j <= worksheet.Dimension.End.Column; j++)
+                        {
+                            var excelCell = worksheet.Cells[i, j].Value;
+
+                            //add cell value to the datatable
+                            if (excelCell != null)
+                            {
+                                try
+                                {
+                                    row[j - 1] = excelCell;
+                                }
+                                catch
+                                {
+                                    response.Error = true;
+                                    response.ErrorText += "Row " + (i - 1) + ", Column " + j + ". Invalid " + dt.Columns[j - 1].DataType.ToString().Replace("System.", "") + " value:  " + excelCell.ToString() + "<br>";
+                                }
+                            }
+                        }
+
+                        //add the new row to the datatable
+                        dt.Rows.Add(row);
+                    }
+
                 }
 
                 response.Data = JsonConvert.SerializeObject(dt);
 
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 response.Error = true;
                 response.ErrorText = ex.Message;
@@ -180,7 +198,8 @@ namespace bezlio.rdb.plugins
             {
                 response.Error = true;
                 response.ErrorText = "Invalid file name.  Must be an xlsx file.";
-            } else
+            }
+            else
             {
                 try
                 {
