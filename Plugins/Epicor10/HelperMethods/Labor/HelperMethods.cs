@@ -36,9 +36,19 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public int JobAsm { get; set; }
         public int JobOp { get; set; }
         public bool Setup { get; set; }
-        public bool Indirect { get; set; }
 
         public Labor_StartActivity()  { }
+    }
+
+    class Labor_StartIndirect
+    {
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public List<int> LaborHedSeq { get; set; }
+        public bool Indirect { get; set; }
+        public string WCCode { get; set; }
+
+        public Labor_StartIndirect() { }
     }
 
     class Labor_EndActivities
@@ -206,96 +216,62 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
 
             try
             {
-                if (request.Indirect == false) //stanard production on a job
+                // Load the referenced BO
+                object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
+
+                foreach (int laborHed in request.LaborHedSeq)
                 {
-                    // Load the referenced BO
-                    object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
+                    // First we need to do a get by ID on the laborHedSeq
+                    var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
 
-                    foreach (int laborHed in request.LaborHedSeq)
+                    // Now end any activities this employee may currently be clocked onto
+                    int laborDtlUpdated = 0;
+                    foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
                     {
-                        // First we need to do a get by ID on the laborHedSeq
-                        var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
-
-                        // Now end any activities this employee may currently be clocked onto
-                        int laborDtlUpdated = 0;
-                        foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
+                        if ((bool)dr["ActiveTrans"] == true)
                         {
-                            if ((bool)dr["ActiveTrans"] == true)
-                            {
-                                dr["EndActivity"] = true;
-                                dr["RowMod"] = "U";
-                                laborDtlUpdated += 1;
-                            }
+                            dr["EndActivity"] = true;
+                            dr["RowMod"] = "U";
+                            laborDtlUpdated += 1;
                         }
+                    }
 
-                        if (laborDtlUpdated > 0)
-                        {
-                            // Now call EndActivity 
-                            bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
-
-                            // Update
-                            bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
-                        }
-
-                        // Now put them onto the new job
-                        if (request.Setup)
-                        {
-                            // We are going to cycle through each laborhedseq to start production
-                            bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "S", ds });
-                        }
-                        else
-                        {
-                            // We are going to cycle through each laborhedseq to start production
-                            bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "P", ds });
-                        }
-
-
-                        // JobNum
-                        bo.GetType().GetMethod("DefaultJobNum").Invoke(bo, new object[] { ds, request.JobNum });
-
-                        // JobAsm
-                        bo.GetType().GetMethod("DefaultAssemblySeq").Invoke(bo, new object[] { ds, request.JobAsm });
-
-                        // JobOp
-                        bo.GetType().GetMethod("DefaultOprSeq").Invoke(bo, new object[] { ds, request.JobOp, "" });
+                    if (laborDtlUpdated > 0)
+                    {
+                        // Now call EndActivity 
+                        bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
 
                         // Update
                         bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
-
-                        // Merge the data into our return
-                        returnDs.Merge((DataSet)ds);
                     }
-                } else { //indirect logic
-                    object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
 
-                    foreach (int laborHed in request.LaborHedSeq)
+                    // Now put them onto the new job
+                    if (request.Setup)
                     {
-                        // First we need to do a get by ID on the laborHedSeq
-                        var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
-
-                        // Now end any activities this employee may currently be clocked onto
-                        int laborDtlUpdated = 0;
-                        foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
-                        {
-                            if ((bool)dr["ActiveTrans"] == true)
-                            {
-                                dr["EndActivity"] = true;
-                                dr["RowMod"] = "U";
-                                laborDtlUpdated += 1;
-                            }
-                        }
-
-                        if (laborDtlUpdated > 0)
-                        {
-                            // Now call EndActivity 
-                            bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
-
-                            // Update
-                            bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
-                        }
-
-                        
+                        // We are going to cycle through each laborhedseq to start production
+                        bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "S", ds });
                     }
+                    else
+                    {
+                        // We are going to cycle through each laborhedseq to start production
+                        bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "P", ds });
+                    }
+
+
+                    // JobNum
+                    bo.GetType().GetMethod("DefaultJobNum").Invoke(bo, new object[] { ds, request.JobNum });
+
+                    // JobAsm
+                    bo.GetType().GetMethod("DefaultAssemblySeq").Invoke(bo, new object[] { ds, request.JobAsm });
+
+                    // JobOp
+                    bo.GetType().GetMethod("DefaultOprSeq").Invoke(bo, new object[] { ds, request.JobOp, "" });
+
+                    // Update
+                    bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+
+                    // Merge the data into our return
+                    returnDs.Merge((DataSet)ds);
                 }
 
                 response.Data = JsonConvert.SerializeObject(returnDs);
@@ -303,6 +279,81 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
             catch (Exception ex)
             {
                 if (!string.IsNullOrEmpty(ex.InnerException.ToString())) {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+                response.Error = true;
+                response.ErrorText += ex.Message;
+            }
+            finally { Common.CloseEpicorConnection(epicorConn, ref response); }
+
+            // Return response object
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> Labor_StartIndirect(RemoteDataBrokerRequest rdbRequest)
+        {
+            // deserialize the request object
+            Labor_StartIndirect request = JsonConvert.DeserializeObject<Labor_StartIndirect>(rdbRequest.Data);
+
+            // create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            // connect to epicor
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+
+            DataSet returnDs = new DataSet();
+
+            try
+            {
+                object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
+
+                foreach (int laborHed in request.LaborHedSeq)
+                {
+                    // First we need to do a get by ID on the laborHedSeq
+                    var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
+
+                    // Now end any activities this employee may currently be clocked onto
+                    int laborDtlUpdated = 0;
+                    foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
+                    {
+                        if ((bool)dr["ActiveTrans"] == true)
+                        {
+                            dr["EndActivity"] = true;
+                            dr["RowMod"] = "U";
+                            laborDtlUpdated += 1;
+                        }
+                    }
+
+                    if (laborDtlUpdated > 0)
+                    {
+                        // Now call EndActivity 
+                        bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
+
+                        // Update
+                        bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+                    }
+
+                    //start indirect activity
+                    bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "I", ds });
+
+                    //default indirect code
+                    bo.GetType().GetMethod("DefaultIndirect").Invoke(bo, new object[] { ds, request.JobNum });
+
+                    //default resource group
+                    string vMsg = "";
+                    bo.GetType().GetMethod("DefaultWCCode").Invoke(bo, new object[] { ds, request.WCCode, vMsg });
+
+                    //update
+                    bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+
+                    // Merge the data into our return
+                    returnDs.Merge((DataSet)ds);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
                     response.ErrorText += ex.InnerException.ToString();
                 }
                 response.Error = true;
