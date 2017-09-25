@@ -45,7 +45,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public string Connection { get; set; }
         public string Company { get; set; }
         public List<int> LaborHedSeq { get; set; }
-        public bool Indirect { get; set; }
+        public string IndirectCode { get; set; }
         public string WCCode { get; set; }
 
         public Labor_StartIndirect() { }
@@ -338,7 +338,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                     bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "I", ds });
 
                     //default indirect code
-                    bo.GetType().GetMethod("DefaultIndirect").Invoke(bo, new object[] { ds, request.JobNum });
+                    bo.GetType().GetMethod("DefaultIndirect").Invoke(bo, new object[] { ds, request.IndirectCode });
 
                     //default resource group
                     string vMsg = "";
