@@ -350,6 +350,8 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                     // Merge the data into our return
                     returnDs.Merge((DataSet)ds);
                 }
+
+                response.Data = JsonConvert.SerializeObject(returnDs);
             }
             catch (Exception ex)
             {
