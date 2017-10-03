@@ -14,6 +14,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public string Company { get; set; }
         public List<string> EmployeeNum { get; set; }
         public int Shift { get; set; }
+        public string Plant { get; set; }
 
         public Labor_ClockIn() { }
     }
@@ -23,6 +24,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public string Connection { get; set; }
         public string Company { get; set; }
         public List<string> EmployeeNum { get; set; }
+        public string Plant { get; set; }
 
         public Labor_ClockOut() { }
     }
@@ -36,6 +38,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public int JobAsm { get; set; }
         public int JobOp { get; set; }
         public bool Setup { get; set; }
+        public string Plant { get; set; }
 
         public Labor_StartActivity()  { }
     }
@@ -45,6 +48,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public string Connection { get; set; }
         public string Company { get; set; }
         public string LaborDataSet { get; set; }
+        public string Plant { get; set; }
 
         public Labor_EndActivities() { }
     }
@@ -60,7 +64,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
             RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
 
             // Establish a connection to Epicor
-            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response, request.Plant);
 
             try
             {
@@ -123,7 +127,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
             RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
 
             // Establish a connection to Epicor
-            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response, request.Plant);
 
             // Load the referenced BO
             object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
@@ -199,7 +203,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
             RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
 
             // Establish a connection to Epicor
-            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response, request.Plant);
 
             DataSet returnDs = new DataSet();
 
@@ -288,7 +292,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
             RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
 
             // Establish a connection to Epicor
-            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response, request.Plant);
 
             DataSet returnDs = new DataSet();
 

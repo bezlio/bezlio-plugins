@@ -289,6 +289,162 @@ namespace bezlio.rdb.plugins
             return response;        
         }
 
+        public static async Task<RemoteDataBrokerResponse> UpdateObject(RemoteDataBrokerRequest rdbRequest)
+        {
+            // Deserialize the body into the data model
+            SalesforceDataModel request = JsonConvert.DeserializeObject<SalesforceDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
+            try
+            {
+                // Settings do not seem to reflect in cleanly, we will read the settings directly
+                string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string cfgPath = asmPath + @"\" + "Salesforce.dll.config";
+                string strConnections = "";
+
+                if (File.Exists(cfgPath))
+                {
+                    // Load in the cfg file
+                    XDocument xConfig = XDocument.Load(cfgPath);
+
+                    // Get the connections
+                    XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
+                    if (xConnections != null)
+                    {
+                        strConnections = xConnections.Value;
+                    }
+                }
+
+                // Deserialize the values from Settings
+                List<SalesforceConnectionInfo> connections = JsonConvert.DeserializeObject<List<SalesforceConnectionInfo>>(strConnections);
+
+                // Locate the connection entry specified
+                SalesforceConnectionInfo connection = connections.Where((c) => c.ConnectionName.Equals(request.Connection)).FirstOrDefault();
+
+                // Create the connection
+                var auth = new AuthenticationClient();
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                await auth.UsernamePasswordAsync(connection.ConsumerKey, connection.ConsumerSecret, connection.UserName, connection.Password + connection.SecurityToken, connection.ServerAddress);
+                var client = new ForceClient(auth.InstanceUrl, auth.AccessToken, auth.ApiVersion);
+
+                // Cycle through the parameters to fill out the object type
+                dynamic obj = new ExpandoObject() as IDictionary<string, object>;
+                // We need an interface to dynamically add the parameters;
+                var ary = obj as IDictionary<String, object>;
+                var id = "";
+
+                foreach (var item in request.Parameters)
+                {
+                    if (item.Key == "Id")
+                    {
+                        id = item.Value;
+                    } else
+                    {
+                        ary.Add(item.Key, item.Value);
+                    }
+                    
+                }
+
+                SuccessResponse r = await client.UpdateAsync(request.ObjectType, id, obj);
+
+                // Return the data table
+                response.Data = JsonConvert.SerializeObject(r.Success);
+
+                // Dispose
+                client.Dispose();
+                client = null;
+                auth.Dispose();
+                auth = null;
+            }
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+            }
+
+            // Return our response
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> DeleteObject(RemoteDataBrokerRequest rdbRequest)
+        {
+            // Deserialize the body into the data model
+            SalesforceDataModel request = JsonConvert.DeserializeObject<SalesforceDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
+            try
+            {
+                // Settings do not seem to reflect in cleanly, we will read the settings directly
+                string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string cfgPath = asmPath + @"\" + "Salesforce.dll.config";
+                string strConnections = "";
+
+                if (File.Exists(cfgPath))
+                {
+                    // Load in the cfg file
+                    XDocument xConfig = XDocument.Load(cfgPath);
+
+                    // Get the connections
+                    XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
+                    if (xConnections != null)
+                    {
+                        strConnections = xConnections.Value;
+                    }
+                }
+
+                // Deserialize the values from Settings
+                List<SalesforceConnectionInfo> connections = JsonConvert.DeserializeObject<List<SalesforceConnectionInfo>>(strConnections);
+
+                // Locate the connection entry specified
+                SalesforceConnectionInfo connection = connections.Where((c) => c.ConnectionName.Equals(request.Connection)).FirstOrDefault();
+
+                // Create the connection
+                var auth = new AuthenticationClient();
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+                await auth.UsernamePasswordAsync(connection.ConsumerKey, connection.ConsumerSecret, connection.UserName, connection.Password + connection.SecurityToken, connection.ServerAddress);
+                var client = new ForceClient(auth.InstanceUrl, auth.AccessToken, auth.ApiVersion);
+
+                // Cycle through the parameters to fill out the object type
+                dynamic obj = new ExpandoObject() as IDictionary<string, object>;
+                // We need an interface to dynamically add the parameters;
+                var ary = obj as IDictionary<String, object>;
+
+                foreach (var item in request.Parameters)
+                {
+                    ary.Add(item.Key, item.Value);
+                }
+
+                SuccessResponse r = await client.DeleteAsync(request.ObjectType, obj.Id);
+
+                // Return the data table
+                response.Data = JsonConvert.SerializeObject(r.Success);
+
+                // Dispose
+                client.Dispose();
+                client = null;
+                auth.Dispose();
+                auth = null;
+            }
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+            }
+
+            // Return our response
+            return response;
+        }
+
         public static string ReadAllText(string path)
         {
             string result = "";

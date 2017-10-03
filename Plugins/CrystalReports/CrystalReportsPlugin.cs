@@ -14,6 +14,7 @@ namespace bezlio.rdb.plugins
     {
         public string FolderName { get; set; }
         public string ReportName { get; set; }
+        public string GetAsType { get; set; }
         public List<KeyValuePair<string, string>> Parameters { get; set; }
 
         public CrystalReportsDataModel()
@@ -184,6 +185,59 @@ namespace bezlio.rdb.plugins
                 }
 
                 response.Data = JsonConvert.SerializeObject(cr.GetAsPDF());
+
+                cr.Close();
+
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
+                response.Error = true;
+                response.ErrorText += ex.Message;
+            }
+
+            // Return our response
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> ReturnReportDataAs(RemoteDataBrokerRequest rdbRequest)
+        {
+            CrystalReportsDataModel request = JsonConvert.DeserializeObject<CrystalReportsDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
+            try
+            {
+                // Load Crystal Report
+                string locationPath = GetLocations().Where((l) => l.LocationName.Equals(request.FolderName)).FirstOrDefault().LocationPath;
+                CrystalReport cr = new CrystalReport(locationPath + request.ReportName);
+
+                // Apply Credentials
+                List<Tuple<string, string, string>> credentials = new List<Tuple<string, string, string>>();
+                foreach (var connection in GetConnections())
+                {
+                    credentials.Add(new Tuple<string, string, string>(connection.DatabaseName, connection.UserName, connection.Password));
+                }
+                cr.SetCredentials(credentials);
+
+                // Apply Parameters
+                var parametersObj = request.Parameters.Where(p => p.Key.Equals("ReportDetails"));
+                if (parametersObj.Count() > 0)
+                {
+                    JContainer parameters = JObject.Parse(parametersObj.FirstOrDefault().Value);
+                    //var parameters = JsonConvert.DeserializeObject(parametersObj.FirstOrDefault().Value);
+                    cr.ApplyParameters(parameters);
+                }
+
+                response.Data = JsonConvert.SerializeObject(cr.GetReportDataAs(request.GetAsType));
 
                 cr.Close();
 
