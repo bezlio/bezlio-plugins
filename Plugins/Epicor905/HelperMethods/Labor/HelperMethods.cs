@@ -349,6 +349,8 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
 
                     // Merge the data into our return
                     returnDs.Merge((DataSet)ds);
+
+                    response.Data = JsonConvert.SerializeObject(returnDs);
                 }
             }
             catch (Exception ex)
@@ -416,31 +418,32 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                         {
                             dr["EndActivity"] = true;
 
-
-                            if (string.IsNullOrEmpty(laborDtl["RequestMove"].ToString()))
-                                dr["RequestMove"] = false;
-                            else
-                                dr["RequestMove"] = laborDtl["RequestMove"];
-
-                            if (drParts.Count() == 0)
-                                dr["LaborQty"] = laborDtl["LaborQty"];
-                            else
-                                dr["LaborQty"] = Convert.ToDecimal(laborDtl["LaborQty"].ToString()) * drParts.Count();
-
-                            // If this is a setup, fill in the setup percentage complete
-                            if (dr["LaborType"].ToString() == "S")
-                                dr["SetupPctComplete"] = laborDtl["SetupPctComplete"];
-
-                            // If there are LaborPart rows in ds, apply the specified LaborQty to each.
-                            // At some point we may wish to add LaborPart support to a Bezl, in which case
-                            // we will want to revise this logic
-                            foreach (DataRow drPart in ((DataSet)ds).Tables["LaborPart"].Select("LaborDtlSeq = " + dr["LaborDtlSeq"]))
+                            if ((string)dr["LaborType"] != "I")
                             {
-                                drPart["PartQty"] = laborDtl["LaborQty"];
-                                drPart["RowMod"] = "U";
+                                if (string.IsNullOrEmpty(laborDtl["RequestMove"].ToString()))
+                                    dr["RequestMove"] = false;
+                                else
+                                    dr["RequestMove"] = laborDtl["RequestMove"];
+
+                                if (drParts.Count() == 0)
+                                    dr["LaborQty"] = laborDtl["LaborQty"];
+                                else
+                                    dr["LaborQty"] = Convert.ToDecimal(laborDtl["LaborQty"].ToString()) * drParts.Count();
+
+                                // If this is a setup, fill in the setup percentage complete
+                                if (dr["LaborType"].ToString() == "S")
+                                    dr["SetupPctComplete"] = laborDtl["SetupPctComplete"];
+
+                                // If there are LaborPart rows in ds, apply the specified LaborQty to each.
+                                // At some point we may wish to add LaborPart support to a Bezl, in which case
+                                // we will want to revise this logic
+                                foreach (DataRow drPart in ((DataSet)ds).Tables["LaborPart"].Select("LaborDtlSeq = " + dr["LaborDtlSeq"]))
+                                {
+                                    drPart["PartQty"] = laborDtl["LaborQty"];
+                                    drPart["RowMod"] = "U";
+                                }
                             }
                         }
-
                     }
 
                     // Update
