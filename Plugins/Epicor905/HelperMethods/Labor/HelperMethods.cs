@@ -352,6 +352,8 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
 
                     response.Data = JsonConvert.SerializeObject(returnDs);
                 }
+
+                response.Data = JsonConvert.SerializeObject(returnDs);
             }
             catch (Exception ex)
             {
