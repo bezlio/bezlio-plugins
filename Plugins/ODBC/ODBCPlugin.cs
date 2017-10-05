@@ -30,11 +30,12 @@ namespace bezlio.rdb.plugins
         public static object GetArgs()
         {
             ODBCDataModel model = new ODBCDataModel();
+            List<ODBCFileLocation> contextLocations = GetLocations();
 
-            model.Context = GetFolderNames();
+            model.Context = GetFolderNames(contextLocations);
             model.DSN = GetConnectionNames();
             model.Connection = "Full connection string to use in lieu of a DSN.";
-            model.QueryName = "The ODBC query filename to execute.";
+            model.QueryName = GetQueriesCascadeDefinition(contextLocations, nameof(model.Context));
             model.Parameters = new List<KeyValuePair<string, string>>();
             model.Parameters.Add(new KeyValuePair<string, string>("CustomerId", "102"));
 
@@ -58,7 +59,24 @@ namespace bezlio.rdb.plugins
                     strConnections = xConnections.Value;
                 }
             }
-            return JsonConvert.DeserializeObject<List<ODBCFileLocation>>(strConnections);
+
+            var contextLocations = JsonConvert.DeserializeObject<List<ODBCFileLocation>>(strConnections);
+            foreach (var context in contextLocations)
+            {
+                if (Directory.Exists(context.LocationPath))
+                {
+                    var ext = new List<string> { ".sql" };
+                    var contentFiles = Directory.GetFiles(context.LocationPath, "*.*", SearchOption.AllDirectories).Where(s => ext.Contains(Path.GetExtension(s)));
+                    context.ContentFileNames = new List<string>();
+
+                    foreach (string fileName in contentFiles)
+                    {
+                        context.ContentFileNames.Add(Path.GetFileNameWithoutExtension(fileName));
+                    }
+                }
+            }
+
+            return contextLocations;
         }
 
         public static List<ODBCConnectionInfo> GetConnections()
@@ -81,14 +99,32 @@ namespace bezlio.rdb.plugins
             return JsonConvert.DeserializeObject<List<ODBCConnectionInfo>>(strConnections);
         }
 
-        public static string GetFolderNames()
+        public static string GetFolderNames(List<ODBCFileLocation> contextLocations)
         {
             var result = "[";
-            foreach (var location in GetLocations())
+            foreach (var location in contextLocations)
             {
                 result += location.LocationName + ",";
             }
             result.TrimEnd(',');
+            result += "]";
+            return result;
+        }
+
+        public static string GetQueriesCascadeDefinition(List<ODBCFileLocation> contextLocations, string contextPropertyName)
+        {
+            var result = "[";
+            foreach (var context in contextLocations)
+            {
+                result += contextPropertyName + ":" + context.LocationName + "[";
+                foreach (var fileName in context.ContentFileNames)
+                {
+                    result += fileName + ",";
+                }
+                result.TrimEnd(new char[] { ',' });
+                result += "],";
+            }
+            result.TrimEnd(new char[] { ',' });
             result += "]";
             return result;
         }
