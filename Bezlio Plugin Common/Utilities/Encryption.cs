@@ -317,7 +317,9 @@ namespace bezlio.Utilities
             Array.Copy(salt, 0, payload, payloadIndex, salt.Length);
           }
 
-          return SimpleEncrypt(secretMessage, cryptKey, authKey, payload);
+            byte[] encryptedData = SimpleEncrypt(secretMessage, cryptKey, authKey, payload);
+            if (encryptedData == null) { throw new Exception("Error Encrypting Message"); }
+            else { return encryptedData; }
         }
 
         public static byte[] SimpleDecryptWithPassword(byte[] encryptedMessage, string password, int nonSecretPayloadLength = 0)
@@ -350,7 +352,9 @@ namespace bezlio.Utilities
             authKey = generator.GetBytes(KeyBitSize / 8);
           }
 
-          return SimpleDecrypt(encryptedMessage, cryptKey, authKey, cryptSalt.Length + authSalt.Length + nonSecretPayloadLength);
+            byte[] decryptedData = SimpleDecrypt(encryptedMessage, cryptKey, authKey, cryptSalt.Length + authSalt.Length + nonSecretPayloadLength);
+            if (decryptedData == null) { throw new Exception("Error Decrypting Message"); }
+            else { return decryptedData; }
         }
       }
 }
