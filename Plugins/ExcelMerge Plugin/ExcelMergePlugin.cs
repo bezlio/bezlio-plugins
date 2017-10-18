@@ -158,16 +158,24 @@ namespace bezlio.rdb.plugins
         public static async Task<RemoteDataBrokerResponse> GetData(RemoteDataBrokerRequest rdbRequest)
         {
             ExcelMergeDataModel request = JsonConvert.DeserializeObject<ExcelMergeDataModel>(rdbRequest.Data);
-            //FileDetailModel[] fileDetails = JsonConvert.DeserializeObject<FileDetailModel>(request.FileDetails);
+            //FileDetailModel fileDetails = JsonConvert.DeserializeObject<FileDetailModel>(request.FileDetails);
 
             // Form dictonary for dynamic switch state
-            Dictionary<int, string> dict = new Dictionary<int, string>();
-            for(var i = 0; i < request.FileDetails.Length; i++)
+            Dictionary<int, string> fileNameDict = new Dictionary<int, string>();
+            Dictionary<int, string> userNameDict = new Dictionary<int, string>();
+            Dictionary<int, string> loginDict = new Dictionary<int, string>();
+            Dictionary<int, string> logoutDict = new Dictionary<int, string>();
+            Dictionary<int, string> dateDict = new Dictionary<int, string>();
+            Dictionary<int, string> minsDict = new Dictionary<int, string>();
+            for (var i = 0; i < request.FileDetails.Length; i++)
             {
-                for(var j = 0; j < 5; j++)
-                {
-                    dict.Add(j, request.FileDetails[j].)
-                }
+                fileNameDict.Add(i, request.FileDetails[i].FileName);
+                userNameDict.Add(i, request.FileDetails[i].UserName);
+                loginDict.Add(i, request.FileDetails[i].Login);
+                logoutDict.Add(i, request.FileDetails[i].Logout);
+                dateDict.Add(i, request.FileDetails[i].Date);
+                minsDict.Add(i, request.FileDetails[i].Minutes);
+
             }
 
 
@@ -276,7 +284,7 @@ namespace bezlio.rdb.plugins
             // Get all files, store in array
             var listOfStrings = new List<string>();
             List<ExcelWorksheet> worksheets = new List<ExcelWorksheet>();
-            for (var j = 0; j < request.FileLocations.Length-2; j++)
+            for (var j = 0; j < request.FileLocations.Length; j++)
             {
                 using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileLocations[j])))
                 {
@@ -307,24 +315,24 @@ namespace bezlio.rdb.plugins
                                 var excelCell = worksheets[j].Cells[i, x].Value;
                                 var columnNumber = 0;
 
-                                switch (worksheets[j].Cells[1, x].Value.ToString())
+                                if (userNameDict.ContainsValue(worksheets[j].Cells[1, x].Value.ToString()))
                                 {
-
-                                    case request.FileDetails[i].UserName.ToString():
-                                        excelCell = worksheets[j].Cells[i, x].Value;
-                                        columnNumber = 0;
-                                        break;
-                                    case "Login":
-                                        excelCell = worksheets[j].Cells[i, x].Value;
-                                        columnNumber = 1;
-                                        break;
-                                    case "Logout":
-                                        excelCell = worksheets[j].Cells[i, x].Value;
-                                        columnNumber = 2;
-                                        break;
-                                    default:
-                                        excelCell = null;
-                                        break;
+                                    excelCell = worksheets[j].Cells[i, x].Value;
+                                    columnNumber = 0;
+                                }
+                                else if (loginDict.ContainsValue(worksheets[j].Cells[1, x].Value.ToString()))
+                                {
+                                    excelCell = worksheets[j].Cells[i, x].Value;
+                                    columnNumber = 1;
+                                }
+                                else if (logoutDict.ContainsValue(worksheets[j].Cells[1, x].Value.ToString()))
+                                {
+                                    excelCell = worksheets[j].Cells[i, x].Value;
+                                    columnNumber = 2;
+                                }
+                                else
+                                {
+                                    excelCell = null;
                                 }
 
 
@@ -343,8 +351,49 @@ namespace bezlio.rdb.plugins
                                 }
                             }
 
-                            // Removes .xlsx from name
-                            tempRow[3] = package.File.Name.Remove(package.File.Name.Length-5, 5);
+
+                        // Removes .xlsx from name
+                        tempRow[3] = package.File.Name.Remove(package.File.Name.Length - 5, 5);
+
+                        var rowModified = false;
+                        var resultStart = 0;
+                        var resultEnd = 0;
+
+                            // Find all rows that might need modified
+                        DataRow[] sl = final_dt.Select("SSID='" + tempRow[0].ToString() + "' AND StartDtm='" + tempRow[1].ToString().Substring(0, 10) + 
+                            "' OR SSID='" + tempRow[0].ToString() + "' AND EndDtm='" + tempRow[2].ToString().Substring(0, 10) + "'");
+                        foreach (DataRow r in sl)
+                        {
+                            // If start dtm listed is less than new start dtm, replace
+                            // compare: || t1 earlier than t2:x < 0 || t1 == t2: 0  ||  t1 later than t2: x > 0 ||
+                            // Start Time
+                             resultStart = DateTime.Compare(Convert.ToDateTime(r["StartDtm"].ToString()), Convert.ToDateTime(tempRow[1].ToString()));
+                            if ( resultStart < 0)
+                            {
+                                // if this time is earlier, than replace old time,  
+                                r["StartDtm"] = tempRow[1].ToString();
+                                rowModified = true;
+                            }
+                            // End Time
+                             resultEnd = DateTime.Compare(Convert.ToDateTime(r["EndDtm"].ToString()), Convert.ToDateTime(tempRow[2].ToString()));
+                            if (resultEnd > 0)
+                            {
+                                // if this time is earlier, than replace old time,  
+                                r["EndDtm"] = tempRow[2].ToString();
+                                rowModified = true;
+                            }
+
+                            if(rowModified)
+                            {
+                                if(!r["DataSource"].ToString().Contains(tempRow[3].ToString()))
+                                {
+                                    r["DataSource"] = r["DataSource"].ToString() + ", " + tempRow[3].ToString(); 
+                                }
+
+                            }
+                        }
+
+                        
 
                             // Figure out difference between DateTimes
                             tempRow[4] = (Convert.ToDateTime(tempRow[2].ToString()) - Convert.ToDateTime(tempRow[1].ToString())).TotalSeconds;
