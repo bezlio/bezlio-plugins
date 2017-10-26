@@ -43,6 +43,17 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
         public Labor_StartActivity()  { }
     }
 
+    class Labor_StartIndirect
+    {
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public List<int> LaborHedSeq { get; set; }
+        public string IndirectCode { get; set; }
+        public string WCCode { get; set; }
+
+        public Labor_StartIndirect() { }
+    }
+
     class Labor_EndActivities
     {
         public string Connection { get; set; }
@@ -212,8 +223,8 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                 // Load the referenced BO
                 object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
 
-
-                foreach (int laborHed in request.LaborHedSeq) {
+                foreach (int laborHed in request.LaborHedSeq)
+                {
                     // First we need to do a get by ID on the laborHedSeq
                     var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
 
@@ -283,6 +294,81 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
             return response;
         }
 
+        public static async Task<RemoteDataBrokerResponse> Labor_StartIndirect(RemoteDataBrokerRequest rdbRequest)
+        {
+            // deserialize the request object
+            Labor_StartIndirect request = JsonConvert.DeserializeObject<Labor_StartIndirect>(rdbRequest.Data);
+
+            // create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            // connect to epicor
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+
+            DataSet returnDs = new DataSet();
+
+            try
+            {
+                object bo = Common.GetBusinessObject(epicorConn, "Labor", ref response);
+
+                foreach (int laborHed in request.LaborHedSeq)
+                {
+                    // First we need to do a get by ID on the laborHedSeq
+                    var ds = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] { laborHed });
+
+                    // Now end any activities this employee may currently be clocked onto
+                    int laborDtlUpdated = 0;
+                    foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
+                    {
+                        if ((bool)dr["ActiveTrans"] == true)
+                        {
+                            dr["EndActivity"] = true;
+                            dr["RowMod"] = "U";
+                            laborDtlUpdated += 1;
+                        }
+                    }
+
+                    if (laborDtlUpdated > 0)
+                    {
+                        // Now call EndActivity 
+                        bo.GetType().GetMethod("EndActivity").Invoke(bo, new object[] { ds });
+
+                        // Update
+                        bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+                    }
+
+                    //start indirect activity
+                    bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "I", ds });
+
+                    //default indirect code
+                    bo.GetType().GetMethod("DefaultIndirect").Invoke(bo, new object[] { ds, request.JobNum });
+
+                    //default resource group
+                    string vMsg = "";
+                    bo.GetType().GetMethod("DefaultWCCode").Invoke(bo, new object[] { ds, request.WCCode, vMsg });
+
+                    //update
+                    bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+
+                    // Merge the data into our return
+                    returnDs.Merge((DataSet)ds);
+                }
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+                response.Error = true;
+                response.ErrorText += ex.Message;
+            }
+            finally { Common.CloseEpicorConnection(epicorConn, ref response); }
+
+            // Return response object
+            return response;
+        }
+
         public static async Task<RemoteDataBrokerResponse> Labor_EndActivities(RemoteDataBrokerRequest rdbRequest)
         {
             // Deserialize the request object
@@ -333,28 +419,30 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                         {
                             dr["EndActivity"] = true;
 
-
-                            if (string.IsNullOrEmpty(laborDtl["RequestMove"].ToString()))
-                                dr["RequestMove"] = false;
-                            else
-                                dr["RequestMove"] = laborDtl["RequestMove"];
-
-                            if (drParts.Count() == 0)
-                                dr["LaborQty"] = laborDtl["LaborQty"];
-                            else
-                                dr["LaborQty"] = Convert.ToDecimal(laborDtl["LaborQty"].ToString()) * drParts.Count();
-
-                            // If this is a setup, fill in the setup percentage complete
-                            if (dr["LaborType"].ToString() == "S")
-                                dr["SetupPctComplete"] = laborDtl["SetupPctComplete"];
-
-                            // If there are LaborPart rows in ds, apply the specified LaborQty to each.
-                            // At some point we may wish to add LaborPart support to a Bezl, in which case
-                            // we will want to revise this logic
-                            foreach (DataRow drPart in ((DataSet)ds).Tables["LaborPart"].Select("LaborDtlSeq = " + dr["LaborDtlSeq"]))
+                            if ((string)dr["LaborType"] != "I")
                             {
-                                drPart["PartQty"] = laborDtl["LaborQty"];
-                                drPart["RowMod"] = "U";
+                                if (string.IsNullOrEmpty(laborDtl["RequestMove"].ToString()))
+                                    dr["RequestMove"] = false;
+                                else
+                                    dr["RequestMove"] = laborDtl["RequestMove"];
+
+                                if (drParts.Count() == 0)
+                                    dr["LaborQty"] = laborDtl["LaborQty"];
+                                else
+                                    dr["LaborQty"] = Convert.ToDecimal(laborDtl["LaborQty"].ToString()) * drParts.Count();
+
+                                // If this is a setup, fill in the setup percentage complete
+                                if (dr["LaborType"].ToString() == "S")
+                                    dr["SetupPctComplete"] = laborDtl["SetupPctComplete"];
+
+                                // If there are LaborPart rows in ds, apply the specified LaborQty to each.
+                                // At some point we may wish to add LaborPart support to a Bezl, in which case
+                                // we will want to revise this logic
+                                foreach (DataRow drPart in ((DataSet)ds).Tables["LaborPart"].Select("LaborDtlSeq = " + dr["LaborDtlSeq"]))
+                                {
+                                    drPart["PartQty"] = laborDtl["LaborQty"];
+                                    drPart["RowMod"] = "U";
+                                }
                             }
                         }
 
