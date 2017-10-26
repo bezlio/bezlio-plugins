@@ -341,7 +341,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                     bo.GetType().GetMethod("StartActivity").Invoke(bo, new object[] { laborHed, "I", ds });
 
                     //default indirect code
-                    bo.GetType().GetMethod("DefaultIndirect").Invoke(bo, new object[] { ds, request.JobNum });
+                    bo.GetType().GetMethod("DefaultIndirect").Invoke(bo, new object[] { ds, request.IndirectCode });
 
                     //default resource group
                     string vMsg = "";
