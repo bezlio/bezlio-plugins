@@ -5,13 +5,18 @@
     "command": "C:/Windows/Microsoft.NET/Framework/v4.0.30319/msbuild",
     "args": [
         // Ask msbuild to generate full paths for file names.
-        "/property:GenerateFullPaths=true"
+        "/property:GenerateFullPaths=true;Configuration=Debug;Platform=x86",
     ],
     "taskSelector": "/t:",
     "showOutput": "silent",
+    "options": {
+        "cwd": "${workspaceFolder}/Plugins/SSRS Plugin"
+    },
     "tasks": [
         {
-            "taskName": "build",
+            "taskName": "Rebuild",
+            //required for running rebuild and still using ctrl+shift+b
+            "isBuildCommand": true,
             // Show the output window only if unrecognized errors occur.
             "showOutput": "silent",
             // Use the standard MS compiler pattern to detect errors, warnings and infos
