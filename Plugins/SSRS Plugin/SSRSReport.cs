@@ -68,53 +68,11 @@ namespace bezlio.rdb.plugins
             RptExecSvc.Extension[] exts = SSRS.ssrsExec.ListRenderingExtensions();
             execInfo = SSRS.ssrsExec.LoadReport(reportPath, historyID);
 
-            if (execInfo.ParametersRequired)
-            {
-                var x = execInfo.Parameters;
-            }
-
             string SessionId = SSRS.ssrsExec.ExecutionHeaderValue.ExecutionID;
 
-            //Console.WriteLine("SessionID: {0}", ssrsExec.ExecutionHeaderValue.ExecutionID);
-
-            //try
-            //{
             result = SSRS.ssrsExec.Render(format, devInfo, out extension, out mimeType, out encoding, out warnings, out streamIDs);
 
-            //return result;
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex.Message);
-            //}
-
-            //string fileName = @"C:\Users\rschn\documents\samplereport.pdf";
-
-            //using (FileStream stream = File.OpenWrite(fileName))
-            //{
-            //    stream.Write(result, 0, result.Length);
-            //    //Console.WriteLine("Report done");
-            //}
-
-            //SSRS.ssrsExec.Dispose();
-
-            //byte[] b = File.ReadAllBytes(fileName);
-            //System.IO.File.Delete(fileName);
-            //return b;
-            //            }
-            //        }
-            //    }
-            //}
-
             return result;
-        }
-
-        public System.Net.ICredentials NetworkCredentials
-        {
-            get
-            {
-                return new NetworkCredential("administrator", "d7cGydCd014lfKHwjuuz", "saberlogicllc");
-            }
         }
     }
 }

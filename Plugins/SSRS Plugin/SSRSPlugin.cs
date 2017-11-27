@@ -35,18 +35,24 @@ namespace bezlio.rdb.plugins
 
         public void Authenticate()
         {
+            string cfgPath = getCfgPath();
+            XDocument xConfig = XDocument.Load(cfgPath);
+            XElement xConnection = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "ssrsConnections").FirstOrDefault();
+
+            List<SSRSConnectionInfo> ssrsConn = JsonConvert.DeserializeObject<List<SSRSConnectionInfo>>(xConnection.Value);
+
             ssrsSvc = new ReportingService2010();
             ssrsExec = new ReportExecutionService();
             creds = new NetworkCredential();
 
-            creds.Domain = "saberlogicllc";
-            creds.UserName = "administrator";
-            creds.Password = "d7cGydCd014lfKHwjuuz";
+            creds.Domain = ssrsConn[0].Domain;
+            creds.UserName = ssrsConn[0].UserName;
+            creds.Password = ssrsConn[0].Password;
 
             ssrsSvc.Credentials = creds;
             ssrsExec.Credentials = creds;
 
-            ssrsExec.Url = "http://dev-sql2014/reportserver/ReportExecution2005.asmx";
+            ssrsExec.Url = ssrsConn[0].ExecUrl;
         }
 
         public static List<FileLocation> GetLocations()
@@ -190,5 +196,12 @@ namespace bezlio.rdb.plugins
         }
 
         //any other custom methods
+        private static string getCfgPath()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
+
+            return cfgPath;
+        }
     }
 }
