@@ -8,6 +8,7 @@ using System.Linq;
 
 namespace bezlio.rdb.plugins
 {
+
     public class ExcelDataModel
     {
         public string FileName { get; set; }
@@ -16,14 +17,15 @@ namespace bezlio.rdb.plugins
         public string SheetData { get; set; }
         public string AllStrings { get; set; }
 
-        public ExcelDataModel() { }
-    }
-    public class ExcelPlugin
+    public ExcelDataModel() { }
+}
+public class ExcelPlugin
+{
+    public static object GetArgs()
     {
-        public static object GetArgs()
-        {
 
-            ExcelDataModel model = new ExcelDataModel();
+        ExcelDataModel model = new ExcelDataModel();
+
 
             model.FileName = "The full path to the Excel file";
             model.SheetName = "Sheet name";
@@ -31,37 +33,36 @@ namespace bezlio.rdb.plugins
             model.SheetData = "Data to be written (only used for WriteFile)";
             model.AllStrings = "[Yes,No]";
 
-            return model;
-        }
+        return model;
+    }
 
-        // This method uses ExcelDataReader (https://github.com/ExcelDataReader/ExcelDataReader) for high-performance
-        // data reads from Excel
-        public static async Task<RemoteDataBrokerResponse> GetData(RemoteDataBrokerRequest rdbRequest)
+    // This method uses ExcelDataReader (https://github.com/ExcelDataReader/ExcelDataReader) for high-performance
+    // data reads from Excel
+    public static async Task<RemoteDataBrokerResponse> GetData(RemoteDataBrokerRequest rdbRequest)
+    {
+        ExcelDataModel request = JsonConvert.DeserializeObject<ExcelDataModel>(rdbRequest.Data);
+
+        // Declare the response object
+        RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+        response.Compress = rdbRequest.Compress;
+        response.RequestId = rdbRequest.RequestId;
+        response.DataType = "applicationJSON";
+
+        try
         {
-            ExcelDataModel request = JsonConvert.DeserializeObject<ExcelDataModel>(rdbRequest.Data);
+            DataTable dt = new DataTable();
 
-            // Declare the response object
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = rdbRequest.Compress;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
-
-            try
+            // First use EPPlus to calculate all formulas so the user is getting fresh data
+            using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
             {
-                DataTable dt = new DataTable();
-
-                // First use EPPlus to calculate all formulas so the user is getting fresh data
-                using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
+                var wks = package.Workbook.Worksheets.Where(s => s.Name.Equals(request.SheetName));
+                ExcelWorksheet worksheet;
+                if (wks.Count() > 0)
                 {
-                    var wks = package.Workbook.Worksheets.Where(s => s.Name.Equals(request.SheetName));
-                    ExcelWorksheet worksheet;
-                    if (wks.Count() > 0)
-                    {
-                        worksheet = wks.First();
-                    }
-                    else
-                    {
-                        // Excel index starts at 1...
+                    worksheet = wks.First();
+                } else
+                {
+                     // Excel index starts at 1...
                         worksheet = package.Workbook.Worksheets[1];
                     }
 
@@ -87,48 +88,39 @@ namespace bezlio.rdb.plugins
                                 dt.Columns.Add(columnName, typeof(String));
                             }
                             else
+
                             {
-                                var excelCellDataType = excelCell;
+                                excelCellDataType = worksheet.Cells[2, j].Value;
 
-                                //if there is a headerrow, set the next cell for the datatype and set the column name
-                                if (request.FirstRowColumnNames == "Yes")
+                                columnName = excelCell.ToString();
+
+                                //check if the column name already exists in the datatable, if so make a unique name
+                                if (dt.Columns.Contains(columnName) == true)
                                 {
-                                    excelCellDataType = worksheet.Cells[2, j].Value;
-
-                                    columnName = excelCell.ToString();
-
-                                    //check if the column name already exists in the datatable, if so make a unique name
-                                    if (dt.Columns.Contains(columnName) == true)
-                                    {
-                                        columnName = columnName + "_" + j;
-                                    }
+                                    columnName = columnName + "_" + j;
                                 }
+                            }
 
-                                //try to determine the datatype for the column (by looking at the next column if there is a header row)
-                                if (excelCellDataType is DateTime)
+                            //try to determine the datatype for the column (by looking at the next column if there is a header row)
+                            if (excelCellDataType is DateTime)
+                            {
+                                dt.Columns.Add(columnName, typeof(DateTime));
+                            }
+                            else if (excelCellDataType is Boolean)
+                            {
+                                dt.Columns.Add(columnName, typeof(Boolean));
+                            }
+                            else if (excelCellDataType is Double)
+                            {
+                                //determine if the value is a decimal or int by looking for a decimal separator
+                                //not the cleanest of solutions but it works since excel always gives a double
+                                if (excelCellDataType.ToString().Contains(".") || excelCellDataType.ToString().Contains(","))
                                 {
-                                    dt.Columns.Add(columnName, typeof(DateTime));
-                                }
-                                else if (excelCellDataType is Boolean)
-                                {
-                                    dt.Columns.Add(columnName, typeof(Boolean));
-                                }
-                                else if (excelCellDataType is Double)
-                                {
-                                    //determine if the value is a decimal or int by looking for a decimal separator
-                                    //not the cleanest of solutions but it works since excel always gives a double
-                                    if (excelCellDataType.ToString().Contains(".") || excelCellDataType.ToString().Contains(","))
-                                    {
-                                        dt.Columns.Add(columnName, typeof(Decimal));
-                                    }
-                                    else
-                                    {
-                                        dt.Columns.Add(columnName, typeof(Int64));
-                                    }
+                                    dt.Columns.Add(columnName, typeof(Decimal));
                                 }
                                 else
                                 {
-                                    dt.Columns.Add(columnName, typeof(String));
+                                    dt.Columns.Add(columnName, typeof(Int64));
                                 }
                             }
                         }
@@ -163,7 +155,6 @@ namespace bezlio.rdb.plugins
                                 }
                             }
                         }
-
                         //add the new row to the datatable
                         dt.Rows.Add(row);
                     }
@@ -179,58 +170,65 @@ namespace bezlio.rdb.plugins
                 response.ErrorText = ex.Message;
             }
 
+            response.Data = JsonConvert.SerializeObject(dt);
 
-            return response;
+        } catch (Exception ex)
+        {
+            response.Error = true;
+            response.ErrorText = ex.Message;
         }
 
-        public static async Task<RemoteDataBrokerResponse> WriteFile(RemoteDataBrokerRequest rdbRequest)
+
+        return response;
+    }
+
+    public static async Task<RemoteDataBrokerResponse> WriteFile(RemoteDataBrokerRequest rdbRequest)
+    {
+        ExcelDataModel request = JsonConvert.DeserializeObject<ExcelDataModel>(rdbRequest.Data);
+
+        // Declare the response object
+        RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+        response.Compress = rdbRequest.Compress;
+        response.RequestId = rdbRequest.RequestId;
+        response.DataType = "applicationJSON";
+
+        // Make sure this is being saved as an xlsx, otherwise throw back an error
+        if (!request.FileName.EndsWith("xlsx"))
         {
-            ExcelDataModel request = JsonConvert.DeserializeObject<ExcelDataModel>(rdbRequest.Data);
+            response.Error = true;
+            response.ErrorText = "Invalid file name.  Must be an xlsx file.";
+        } else
+        {
+            try
+            {
+                DataTable dt = JsonConvert.DeserializeObject<DataTable>(request.SheetData);
 
-            // Declare the response object
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = rdbRequest.Compress;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
-
-            // Make sure this is being saved as an xlsx, otherwise throw back an error
-            if (!request.FileName.EndsWith("xlsx"))
+                // Now write this to an Excel file
+                using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
+                {
+                    ExcelWorksheet worksheet;
+                    var existingWs = package.Workbook.Worksheets.Where(s => s.Name.Equals(request.SheetName));
+                    if (existingWs.Count() == 0)
+                    {
+                        worksheet = package.Workbook.Worksheets.Add(request.SheetName);
+                    }
+                    else
+                    {
+                        worksheet = existingWs.First();
+                    }
+                    worksheet.Cells["A1"].LoadFromDataTable(dt, request.FirstRowColumnNames == "Yes");
+                    package.Save();
+                }
+            }
+            catch (Exception ex)
             {
                 response.Error = true;
-                response.ErrorText = "Invalid file name.  Must be an xlsx file.";
+                response.ErrorText = ex.Message;
             }
-            else
-            {
-                try
-                {
-                    DataTable dt = JsonConvert.DeserializeObject<DataTable>(request.SheetData);
-
-                    // Now write this to an Excel file
-                    using (ExcelPackage package = new ExcelPackage(new FileInfo(request.FileName)))
-                    {
-                        ExcelWorksheet worksheet;
-                        var existingWs = package.Workbook.Worksheets.Where(s => s.Name.Equals(request.SheetName));
-                        if (existingWs.Count() == 0)
-                        {
-                            worksheet = package.Workbook.Worksheets.Add(request.SheetName);
-                        }
-                        else
-                        {
-                            worksheet = existingWs.First();
-                        }
-                        worksheet.Cells["A1"].LoadFromDataTable(dt, request.FirstRowColumnNames == "Yes");
-                        package.Save();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    response.Error = true;
-                    response.ErrorText = ex.Message;
-                }
-            }
-
-            return response;
         }
 
+        return response;
     }
+
+}
 }

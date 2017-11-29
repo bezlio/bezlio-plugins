@@ -42,7 +42,8 @@ namespace bezlio.rdb.plugins.HelperMethods.Materials
 
     public class MaterialsHelperMethods
     {
-        public static async Task<RemoteDataBrokerResponse> Materials_IssueReturnToJob(RemoteDataBrokerRequest rdbRequest) {
+        public static async Task<RemoteDataBrokerResponse> Materials_IssueReturnToJob(RemoteDataBrokerRequest rdbRequest)
+        {
             // Deserialize the request object
             IssueReturnToJob request = JsonConvert.DeserializeObject<IssueReturnToJob>(rdbRequest.Data);
 
@@ -126,16 +127,18 @@ namespace bezlio.rdb.plugins.HelperMethods.Materials
 
                         t.Status = "Success";
 
-                    } catch (Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         t.Status = "Error";
                         if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
                         {
                             t.Details = ex.InnerException.ToString();
-                        } else
+                        }
+                        else
                         {
                             t.Details = ex.Message;
-                        }                       
+                        }
                     }
                 }
 

@@ -16,7 +16,7 @@ namespace bezlio.rdb.plugins
             return response;
         }
 
-        public static object GetEpicorConnection(string connectionName, string companyId, ref RemoteDataBrokerResponse response)
+        public static object GetEpicorConnection(string connectionName, string companyId, ref RemoteDataBrokerResponse response, string plantId = "")
         {
             try
             {
@@ -34,6 +34,13 @@ namespace bezlio.rdb.plugins
                     epicorConn.GetType().InvokeMember("CompanyID",
                                  BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
                                  Type.DefaultBinder, epicorConn, new Object[] { companyId });
+
+                    if (plantId != "")
+                    {
+                        epicorConn.GetType().InvokeMember("PlantID",
+                             BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
+                             Type.DefaultBinder, epicorConn, new Object[] { plantId });
+                    }
                 }
 
 

@@ -52,6 +52,48 @@ Required Arguments:
 * Complete - Job complete flag.
 * OpComplete - Operation complete flag.
 
+### Labor_ClockIn
+This helper method allows you to clock in an array of employees via MES.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* EmployeeNum - An array of employee numbers to clock out.
+* Shift - The shift number to clock the array of employees onto.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+### Labor_ClockOut
+This helper method allows you to clock an array of LaborHedSeq onto a job within MES.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* LaborHedSeq - An array of LaborHedSeq to clock onto the specified job.
+* JobNum - The job number to clock the array of LaborHedSeq onto.
+* JobAsm - The job assembly to clock the array of LaborHedSeq onto.
+* JobOp - The job operation to clock the array of LaborHedSeq onto.
+* Setup - A boolean to specify whether the job to clock onto should be for setup.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+### Labor_EndActivities
+This helper method allows you to end activity for an array of LaborDataSet (obtained via GetByID on Labor object).
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* LaborDataSet - A LaborDataSet to end activities on.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+### Labor_StartActivity
+This helper method allows you to clock out an array of employees via MES.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* EmployeeNum - An array of employee numbers to clock in.
+* Shift - The shift number to clock the array of employees onto.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
 ### Materials_IssueReturnToJob
 This helper method allows you to perform multiple material issues in the same transaction while also dynamically adding materials to jobs.
 
@@ -76,6 +118,9 @@ Required Arguments:
       ToBinNum			:	i.bin
 }
 ```
+
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
 
 ## Usage
 Within Bezlio, this plugin can be used to call any Epicor BO method.  These connections can be made using either the wizard-based data connections tool in Bezlio or with Javascript code (which would give you the most flexibility).  We will document a few examples here in Javascript:
