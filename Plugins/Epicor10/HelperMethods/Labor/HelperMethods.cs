@@ -413,23 +413,22 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                     // Now mark each LaborDtl in this dataset with a RowMod U
                     foreach (DataRow dr in ((DataSet)ds).Tables["LaborDtl"].Rows)
                     {
-                        var drParts = ((DataSet)ds).Tables["LaborDtl"].Select("LaborDtlSeq = " + dr["LaborDtlSeq"]);
-
                         if ((bool)dr["ActiveTrans"] == true)
                         {
                             dr["EndActivity"] = true;
 
                             if ((string)dr["LaborType"] != "I")
                             {
-                                if (string.IsNullOrEmpty(laborDtl["RequestMove"].ToString()))
-                                    dr["RequestMove"] = false;
-                                else
-                                    dr["RequestMove"] = laborDtl["RequestMove"];
+                                try
+                                {
+                                    if (string.IsNullOrEmpty(laborDtl["RequestMove"].ToString()))
+                                        dr["RequestMove"] = false;
+                                    else
+                                        dr["RequestMove"] = laborDtl["RequestMove"];
+                                }
+                                catch { }
 
-                                if (drParts.Count() == 0)
-                                    dr["LaborQty"] = laborDtl["LaborQty"];
-                                else
-                                    dr["LaborQty"] = Convert.ToDecimal(laborDtl["LaborQty"].ToString()) * drParts.Count();
+                                dr["LaborQty"] = laborDtl["LaborQty"];
 
                                 // If this is a setup, fill in the setup percentage complete
                                 if (dr["LaborType"].ToString() == "S")
@@ -443,9 +442,9 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                                     drPart["PartQty"] = laborDtl["LaborQty"];
                                     drPart["RowMod"] = "U";
                                 }
+
                             }
                         }
-
                     }
 
                     // Update
