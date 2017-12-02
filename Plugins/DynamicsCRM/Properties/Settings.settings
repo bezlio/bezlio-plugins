@@ -1,0 +1,16 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DynamicsCRM.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="connections" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">[
+   {
+      "ConnectionName": "default",
+      "OrganizationUri": "https://mysite.crm.dynamics.com/XRMServices/2011/Organization.svc",
+      "Username": "myuser",
+      "Password": "mypass"
+   }
+]</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

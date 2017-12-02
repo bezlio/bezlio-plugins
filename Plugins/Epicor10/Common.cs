@@ -16,7 +16,7 @@ namespace bezlio.rdb.plugins
             return response;
         }
 
-        public static object GetEpicorConnection(string connectionName, string companyId, ref RemoteDataBrokerResponse response)
+        public static object GetEpicorConnection(string connectionName, string companyId, ref RemoteDataBrokerResponse response, string plantId = "")
         {
             try
             {
@@ -34,6 +34,13 @@ namespace bezlio.rdb.plugins
                     epicorConn.GetType().InvokeMember("CompanyID",
                                  BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
                                  Type.DefaultBinder, epicorConn, new Object[] { companyId });
+
+                    if (!string.IsNullOrEmpty(plantId))
+                    {
+                        epicorConn.GetType().InvokeMember("PlantID",
+                             BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
+                             Type.DefaultBinder, epicorConn, new Object[] { plantId });
+                    }
                 }
 
 
@@ -91,8 +98,17 @@ namespace bezlio.rdb.plugins
         public static object GetBusinessObjectDataSet(string boName, string dataSetName, ref RemoteDataBrokerResponse response)
         {
             string clientPath = Config.GetClientPath(ref response);
-            Assembly genericAssembly = Assembly.LoadFrom(clientPath + @"\Erp.Contracts.BO." + boName + ".dll");
-            return Activator.CreateInstance(genericAssembly.GetType(dataSetName));
+
+            if (File.Exists(clientPath + @"\Erp.Contracts.BO." + boName + ".dll"))
+            {
+                Assembly genericAssembly = Assembly.LoadFrom(clientPath + @"\Erp.Contracts.BO." + boName + ".dll");
+                return Activator.CreateInstance(genericAssembly.GetType(dataSetName));
+            } else
+            {
+                Assembly genericAssembly = Assembly.LoadFrom(clientPath + @"\Ice.Contracts.BO." + boName + ".dll");
+                return Activator.CreateInstance(genericAssembly.GetType(dataSetName));
+            }
+
         }
     }
 }

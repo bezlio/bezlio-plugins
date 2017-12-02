@@ -6,6 +6,11 @@ Allows you to execute any of the Epicor 10 / 10.1 Business Objects, so anything 
 ## Installation
 See generic plugin instructions at https://github.com/bezlio/bezlio-plugins.
 
+In supplement to these steps, note the following additional details:
+
+* You should copy the file Epicor.ServiceModel.dll from your Epicor client directory to the Bezlio install directory.  You will need to stop the service before Windows will allow you to do this.
+* In your Epicor client folder there is a config subfolder.  We currently require that you have a default.sysconfig within this file, although we do not pull things like the AppServerURL from there.  Just copy one of your existing files and rename it.
+
 ## Configuration
 In order to configure this plugin you will need to edit the Epicor10.dll.config file in the plugins directory with the text editor of your choice.  Within this file, revise according to these guidelines:
 * The 'connections' section (which starts with <setting name="connections" serializeAs="String"> and ends with </setting>) defines each of the connections to Epicor you wish to expose to Bezlio users.  When they chose to interact with this plugin, they are going to simply call the connection by connectionName and will never know the app server URL, user name, or password.  The entries defined in here are in JSON format separated by commas.  
@@ -23,6 +28,15 @@ Required Arguments:
 * BOMethodName - The name of the BO method to execute (for example 'UpdateExt').
 * Parameters - A key / value pair list of parameters to pass into this BO method.
 
+### ExecuteBAQ
+This method allows you to easily run an Epicor BAQ.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* BaqId - The name of the Epicor BAQ.
+* Parameters - A key / value pair list of parameters for this BAQ.
+
 ### JobAdjustment_LaborAdj
 Perform a labor adjustment on a job.  This is a helper method (one of many to come) that simplifies what could have been done using ExecuteBOMethod, but would have taken several steps.
 
@@ -38,6 +52,76 @@ Required Arguments:
 * Complete - Job complete flag.
 * OpComplete - Operation complete flag.
 
+### Labor_ClockIn
+This helper method allows you to clock in an array of employees via MES.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* EmployeeNum - An array of employee numbers to clock out.
+* Shift - The shift number to clock the array of employees onto.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+### Labor_ClockOut
+This helper method allows you to clock an array of LaborHedSeq onto a job within MES.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* LaborHedSeq - An array of LaborHedSeq to clock onto the specified job.
+* JobNum - The job number to clock the array of LaborHedSeq onto.
+* JobAsm - The job assembly to clock the array of LaborHedSeq onto.
+* JobOp - The job operation to clock the array of LaborHedSeq onto.
+* Setup - A boolean to specify whether the job to clock onto should be for setup.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+### Labor_EndActivities
+This helper method allows you to end activity for an array of LaborDataSet (obtained via GetByID on Labor object).
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* LaborDataSet - A LaborDataSet to end activities on.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+### Labor_StartActivity
+This helper method allows you to clock out an array of employees via MES.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* EmployeeNum - An array of employee numbers to clock in.
+* Shift - The shift number to clock the array of employees onto.
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+### Materials_IssueReturnToJob
+This helper method allows you to perform multiple material issues in the same transaction while also dynamically adding materials to jobs.
+
+Required Arguments:
+* Connection - The name of the Epicor connection as defined in the 'connections' section of the plugin config file.
+* Company - Epicor company ID.
+* AddMaterials - true / false to determine if you want materials to be dynamically added to job.
+* Transactions - An array of objects using the following structure to represent the desired transactions:
+
+```
+{
+      JobNum			: 	m.job,
+      AssemblySeq		:	m.asm,
+      MtlSeq			:	m.mtlSeq,
+      TranType			:	'STK-MTL',
+      PartNum			:	m.partNum,
+      TranQty			:	i.qty,
+      UOM				:	i.uom,
+      FromWarehouseCode	:	i.whse,
+      FromBinNum		:	i.bin,
+      ToWarehouseCode	:	i.whse,
+      ToBinNum			:	i.bin
+}
+```
+
+* Plant - An optional argument exists on this helper method to specify the plant.  If omitted the default plant is used.
+
+
 ## Usage
 Within Bezlio, this plugin can be used to call any Epicor BO method.  These connections can be made using either the wizard-based data connections tool in Bezlio or with Javascript code (which would give you the most flexibility).  We will document a few examples here in Javascript:
 
@@ -47,13 +131,11 @@ bezl.dataService.add(
   'MyBAQResults'
   ,'brdb'
   ,'Epicor10'
-  ,'ExecuteBOMethod'
+  ,'ExecuteBAQ'
   , 
     {"Connection": "Friendly Connection Name"
     , "Company": "Your Epicor Company ID"
-    , "BOName": "DynamicQuery"
-    , "BOMethodName": "ExecuteByID"
-    , "Parameters": [{ "Key": "queryID", "Value": "MyTestBAQ" }] }
+    , "BaqId": "MyTestBAQ"
   , 0);
 ```
 
@@ -115,3 +197,42 @@ Some of the things you may wish to do in Epicor may involve a number of consecut
         , 0);
   };
 ```
+
+Issue a variety of materials to one or many jobs:
+
+```
+var transactions = [];
+bezl.vars.materials.forEach(m => {
+  m.issuePending.forEach(i => {
+    
+	transactions.push({
+      JobNum			: 	m.job,
+      AssemblySeq		:	m.asm,
+      MtlSeq			:	m.mtlSeq,
+      TranType			:	'STK-MTL',
+      PartNum			:	m.partNum,
+      TranQty			:	i.qty,
+      UOM				:	i.uom,
+      FromWarehouseCode	:	i.whse,
+      FromBinNum		:	i.bin,
+      ToWarehouseCode	:	i.whse,
+      ToBinNum			:	i.bin
+    });
+  });
+  
+});
+
+bezl.dataService.add(
+  'IssueMaterials'
+  , 'brdb'
+  , 'Epicor10'
+  , 'Materials_IssueReturnToJob'
+  ,
+  {
+    'Connection'	: 'Epicor 10 AE'
+    , 'Company'		: 'EPIC06'
+    , 'AddMaterials': true
+    , 'Transactions': transactions
+  }
+  , 0);
+  ```
