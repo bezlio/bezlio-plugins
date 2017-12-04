@@ -8,12 +8,14 @@ using System.Linq;
 
 namespace bezlio.rdb.plugins
 {
-public class ExcelDataModel
-{
-    public string FileName { get; set; }
-    public string SheetName { get; set; }
-    public string FirstRowColumnNames { get; set; }
-    public string SheetData { get; set; }
+
+    public class ExcelDataModel
+    {
+        public string FileName { get; set; }
+        public string SheetName { get; set; }
+        public string FirstRowColumnNames { get; set; }
+        public string SheetData { get; set; }
+        public string AllStrings { get; set; }
 
     public ExcelDataModel() { }
 }
@@ -24,10 +26,12 @@ public class ExcelPlugin
 
         ExcelDataModel model = new ExcelDataModel();
 
-        model.FileName = "The full path to the Excel file";
-        model.SheetName = "Sheet name";
-        model.FirstRowColumnNames = "[Yes,No]";
-        model.SheetData = "Data to be written (only used for WriteFile)";
+
+            model.FileName = "The full path to the Excel file";
+            model.SheetName = "Sheet name";
+            model.FirstRowColumnNames = "[Yes,No]";
+            model.SheetData = "Data to be written (only used for WriteFile)";
+            model.AllStrings = "[Yes,No]";
 
         return model;
     }
@@ -58,9 +62,9 @@ public class ExcelPlugin
                     worksheet = wks.First();
                 } else
                 {
-                    // Excel index starts at 1...
-                    worksheet = package.Workbook.Worksheets[1];
-                }
+                     // Excel index starts at 1...
+                        worksheet = package.Workbook.Worksheets[1];
+                    }
 
                     worksheet.Calculate();
 
@@ -79,10 +83,12 @@ public class ExcelPlugin
 
                         if (excelCell != null)
                         {
-                            var excelCellDataType = excelCell;
+                            if (request.AllStrings == "Yes")
+                            {
+                                dt.Columns.Add(columnName, typeof(String));
+                            }
+                            else
 
-                            //if there is a headerrow, set the next cell for the datatype and set the column name
-                            if (request.FirstRowColumnNames == "Yes")
                             {
                                 excelCellDataType = worksheet.Cells[2, j].Value;
 
@@ -117,10 +123,6 @@ public class ExcelPlugin
                                     dt.Columns.Add(columnName, typeof(Int64));
                                 }
                             }
-                            else
-                            {
-                                dt.Columns.Add(columnName, typeof(String));
-                            }
                         }
                         else
                         {
@@ -153,11 +155,19 @@ public class ExcelPlugin
                                 }
                             }
                         }
-
                         //add the new row to the datatable
                         dt.Rows.Add(row);
                     }
-                   
+
+                }
+
+                response.Data = JsonConvert.SerializeObject(dt);
+
+            }
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = ex.Message;
             }
 
             response.Data = JsonConvert.SerializeObject(dt);

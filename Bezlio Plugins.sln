@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Epicor10 Plugin", "Plugins\Epicor10\Epicor10 Plugin.csproj", "{F571322C-133E-4937-8869-C617F5785A41}"
 EndProject
@@ -34,6 +34,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AccordFramework Plugin", "Plugins\AccordFramework Plugin\AccordFramework Plugin.csproj", "{F3B14128-D9B9-48FE-BE4E-ED2FF115FCBC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "REST Plugin", "Plugins\REST Plugin\REST Plugin.csproj", "{CAD3196C-749D-44E7-A42C-62960AF179C7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SSRS Plugin", "Plugins\SSRS Plugin\SSRS Plugin.csproj", "{C378D230-2DDC-407D-B26A-CB65E78C79E3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Office_365", "Plugins\Office_365\Office_365.csproj", "{C378D230-2DDC-407D-B26A-CB65E78C79E3}"
 EndProject

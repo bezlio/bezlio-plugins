@@ -1,0 +1,35 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="bezlio.rdb.plugins.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="connections" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">
+                  [
+                  {
+                  'connectionName': 'Friendly Connection Name',
+                  'serverAddress': 'SQL_SERVER',
+                  'databaseName': 'DATABASE_NAME',
+                  'userName': 'SQL_USER_NAME',
+                  'password': 'SQL_USER_PASSWORD'
+                  }
+                  ]
+                
+</Value>
+    </Setting>
+    <Setting Name="rptSvrLocation" Type="System.String" Scope="User">
+      <Value Profile="(Default)">
+                  [
+                  {
+                  'locationName': 'Friendly Name',
+                  'locationPath': 'C:\\Path\\Reports\\'
+                  },
+                  {
+                  'locationName': 'Another Friendly Name',
+                  'locationPath': 'C:\\Different Path\\Reports\\'
+                  }
+                  ]
+                
+</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
