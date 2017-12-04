@@ -39,6 +39,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Office_365", "Plugins\Offic
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicsCRM", "Plugins\DynamicsCRM\DynamicsCRM.csproj", "{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TensorFlow Plugin", "TensorFlow Plugin\TensorFlow Plugin.csproj", "{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -190,6 +192,14 @@ Global
 		{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}.Release|x86.ActiveCfg = Release|Any CPU
 		{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}.Release|x86.Build.0 = Release|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Debug|x86.Build.0 = Debug|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Release|x86.ActiveCfg = Release|Any CPU
+		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
