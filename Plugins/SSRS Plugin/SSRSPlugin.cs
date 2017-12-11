@@ -22,7 +22,7 @@ namespace bezlio.rdb.plugins
     }
 
     //main class, crux of work done here
-    public class SSRS //when renaming, your DLL name must match this  
+    public class SSRS
     {
         public static ReportingService2010 ssrsSvc;
         public static ReportExecutionService ssrsExec;
@@ -31,6 +31,15 @@ namespace bezlio.rdb.plugins
         public SSRS()
         {
             Authenticate();
+        }
+
+        public static object GetArgs()
+        {
+            SSRSDataModel model = new SSRSDataModel();
+            model.FolderName = GetFolderNames();
+            model.ReportName = "The report filename to run.";
+
+            return model;
         }
 
         public void Authenticate()
@@ -55,53 +64,19 @@ namespace bezlio.rdb.plugins
             ssrsExec.Url = ssrsConn[0].ExecUrl;
         }
 
-        public static List<FileLocation> GetLocations()
-        {
-            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
-            string strLocations = "";
-
-            XDocument xConfig = XDocument.Load(cfgPath);
-            XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "rptSvrLocation").FirstOrDefault();
-            if (xLocations != null)
-            {
-                strLocations = xLocations.Value;
-            }
-            return JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
-        }
-
         public static string GetFolderNames()
         {
-            var result = "[";
-            foreach (var location in GetLocations())
+            string result = "[";
+            foreach (var rpt in ssrsSvc.ListChildren("/reports", true))
             {
-                result += location.LocationName + ",";
-            }
-            result.TrimEnd(',');
-            result += "]";
-            return result;
-        }
-
-        public static SSRSConnectionInfo GetConnection()
-        {
-            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
-            string strConnection = "";
-
-            if (File.Exists(cfgPath))
-            {
-                // Load in the cfg file
-                XDocument xConfig = XDocument.Load(cfgPath);
-
-                // Get the setting for the debug log destination
-                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connection").FirstOrDefault();
-                if (xConnections != null)
+                if (rpt.TypeName == "Folder")
                 {
-                    strConnection = xConnections.Value;
+                    result += (result == "[") ? rpt.Name : "," + rpt.Name;
                 }
             }
+            result += "]";
 
-            return JsonConvert.DeserializeObject<SSRSConnectionInfo>(strConnection);
+            return result;
         }
 
         public static async Task<RemoteDataBrokerResponse> GetReportList(RemoteDataBrokerRequest rdbRequest)
@@ -116,6 +91,10 @@ namespace bezlio.rdb.plugins
             try
             {
                 List<dynamic> result = new List<dynamic>();
+                if(request.FolderName.IndexOf("/reports") == -1)
+                {
+                    request.FolderName = "/reports/" + request.FolderName;
+                }
                 foreach (var rpt in ssrsSvc.ListChildren(request.FolderName, true))
                 {
                     result.Add(new
