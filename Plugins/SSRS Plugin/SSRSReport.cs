@@ -11,32 +11,45 @@ using RptExecSvc;
 
 namespace bezlio.rdb.plugins
 {
+    class SSRSReportParameters
+    {
+        public string name { get; set; }
+        public string type { get; set; }
+    }
     class SSRSReport
     {
-        public byte[] GetAsPDF()
+        
+        public object GetParameters(string folderPath, string reportName)
         {
-            ReportingService2010 ssrsService = new ReportingService2010();
-            System.Net.NetworkCredential cred = new System.Net.NetworkCredential();
-            cred.Domain = "saberlogicllc";
-            cred.UserName = "administrator";
-            cred.Password = "d7cGydCd014lfKHwjuuz";
+            string reportPath = folderPath + "/" + reportName;
+            string historyID = null;
+
+            ExecutionInfo execInfo = new ExecutionInfo();
+            ExecutionHeader execHeader = new ExecutionHeader();
+
+            SSRS.ssrsExec.ExecutionHeaderValue = execHeader;
+
+            execInfo = SSRS.ssrsExec.LoadReport(reportPath, historyID);
+
+            if (execInfo.ParametersRequired)
+            {
+                var x = execInfo.Parameters;
+            }
+
+            object parameters = execInfo.Parameters.Select(param => new SSRSReportParameters
+            {
+                name = param.Name,
+                type = param.ToString()
+            });
+
+            return parameters;
+        }
+
+        public byte[] GetAsPDF(string folderPath, string reportName)
+        {
             byte[] result = null;
 
-            ssrsService.Credentials = NetworkCredentials;
-
-            //foreach (var x in ssrsService.ListChildren("/", true))
-            //{
-            //    if (x.Name == "CustomReports")
-            //    {
-            //        foreach (var rpt in ssrsService.ListChildren(x.Path, true))
-            //        {
-            //            if (rpt.Name == "OrdersByState")
-            //            {
-            ReportExecutionService ssrsExec = new ReportExecutionService();
-            ssrsExec.Credentials = cred;
-            ssrsExec.Url = "http://dev-sql2014/reportserver/ReportExecution2005.asmx";
-
-            string reportPath = @"/reports/CustomReports/OrdersByState";
+            string reportPath = folderPath + "/" + reportName;
             string format = "HTML4.0";
             string historyID = null;
             string devInfo = @"<DeviceInfo><Toolbar>False</Toolbar></DeviceInfo>";
@@ -50,53 +63,16 @@ namespace bezlio.rdb.plugins
             ExecutionInfo execInfo = new ExecutionInfo();
             ExecutionHeader execHeader = new ExecutionHeader();
 
-            ssrsExec.ExecutionHeaderValue = execHeader;
+            SSRS.ssrsExec.ExecutionHeaderValue = execHeader;
 
-            RptExecSvc.Extension[] exts = ssrsExec.ListRenderingExtensions();
-            execInfo = ssrsExec.LoadReport(reportPath, historyID);
+            RptExecSvc.Extension[] exts = SSRS.ssrsExec.ListRenderingExtensions();
+            execInfo = SSRS.ssrsExec.LoadReport(reportPath, historyID);
 
-            String SessionId = ssrsExec.ExecutionHeaderValue.ExecutionID;
+            string SessionId = SSRS.ssrsExec.ExecutionHeaderValue.ExecutionID;
 
-            //Console.WriteLine("SessionID: {0}", ssrsExec.ExecutionHeaderValue.ExecutionID);
-
-            //try
-            //{
-            result = ssrsExec.Render(format, devInfo, out extension, out mimeType, out encoding, out warnings, out streamIDs);
-
-            //return result;
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine(ex.Message);
-            //}
-
-            //string fileName = @"C:\Users\rschn\documents\samplereport.pdf";
-
-            //using (FileStream stream = File.OpenWrite(fileName))
-            //{
-            //    stream.Write(result, 0, result.Length);
-            //    //Console.WriteLine("Report done");
-            //}
-
-            ssrsExec.Dispose();
-
-            //byte[] b = File.ReadAllBytes(fileName);
-            //System.IO.File.Delete(fileName);
-            //return b;
-            //            }
-            //        }
-            //    }
-            //}
+            result = SSRS.ssrsExec.Render(format, devInfo, out extension, out mimeType, out encoding, out warnings, out streamIDs);
 
             return result;
-        }
-
-        public System.Net.ICredentials NetworkCredentials
-        {
-            get
-            {
-                return new NetworkCredential("administrator", "d7cGydCd014lfKHwjuuz", "saberlogicllc");
-            }
         }
     }
 }

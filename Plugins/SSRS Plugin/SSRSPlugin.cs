@@ -22,70 +22,61 @@ namespace bezlio.rdb.plugins
     }
 
     //main class, crux of work done here
-    public class SSRS //when renaming, your DLL name must match this  
+    public class SSRS
     {
-        static ReportingService2010 ssrsSvc;
-        static ReportExecutionService ssrsExec;
+        public static ReportingService2010 ssrsSvc;
+        public static ReportExecutionService ssrsExec;
         static NetworkCredential creds;
+
+        public SSRS()
+        {
+            Authenticate();
+        }
 
         public static object GetArgs()
         {
             SSRSDataModel model = new SSRSDataModel();
-
             model.FolderName = GetFolderNames();
+            model.ReportName = "The report filename to run.";
 
-            object x = new object();
-
-            return x;
+            return model;
         }
 
-        public static List<FileLocation> GetLocations()
+        public void Authenticate()
         {
-            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
-            string strLocations = "";
-
+            string cfgPath = getCfgPath();
             XDocument xConfig = XDocument.Load(cfgPath);
-            XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "rptSvrLocation").FirstOrDefault();
-            if (xLocations != null)
-            {
-                strLocations = xLocations.Value;
-            }
-            return JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
+            XElement xConnection = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "ssrsConnections").FirstOrDefault();
+
+            List<SSRSConnectionInfo> ssrsConn = JsonConvert.DeserializeObject<List<SSRSConnectionInfo>>(xConnection.Value);
+
+            ssrsSvc = new ReportingService2010();
+            ssrsExec = new ReportExecutionService();
+            creds = new NetworkCredential();
+
+            creds.Domain = ssrsConn[0].Domain;
+            creds.UserName = ssrsConn[0].UserName;
+            creds.Password = ssrsConn[0].Password;
+
+            ssrsSvc.Credentials = creds;
+            ssrsExec.Credentials = creds;
+
+            ssrsExec.Url = ssrsConn[0].ExecUrl;
         }
 
         public static string GetFolderNames()
         {
-            var result = "[";
-            foreach (var location in GetLocations())
+            string result = "[";
+            foreach (var rpt in ssrsSvc.ListChildren("/reports", true))
             {
-                result += location.LocationName + ",";
-            }
-            result.TrimEnd(',');
-            result += "]";
-            return result;
-        }
-
-        public static SSRSConnectionInfo GetConnection()
-        {
-            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
-            string strConnection = "";
-            
-            if (File.Exists(cfgPath))
-            {
-                // Load in the cfg file
-                XDocument xConfig = XDocument.Load(cfgPath);
-
-                // Get the setting for the debug log destination
-                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connection").FirstOrDefault();
-                if (xConnections != null)
+                if (rpt.TypeName == "Folder")
                 {
-                    strConnection = xConnections.Value;
+                    result += (result == "[") ? rpt.Name : "," + rpt.Name;
                 }
             }
+            result += "]";
 
-            return JsonConvert.DeserializeObject<SSRSConnectionInfo>(strConnection);
+            return result;
         }
 
         public static async Task<RemoteDataBrokerResponse> GetReportList(RemoteDataBrokerRequest rdbRequest)
@@ -99,33 +90,21 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                //create network credentials to use for auth
-                //SSRSConnectionInfo connectionInfo = GetConnection();
-                //NetworkCredential credentials = new NetworkCredential();
-                //credentials.Domain = connectionInfo.Domain;
-                //credentials.UserName = connectionInfo.UserName;
-                //credentials.Password = connectionInfo.Password;
-
-                //instantiate SSRS Report Service and apply credentials
-                ssrsSvc = new ReportingService2010();
-                System.Net.NetworkCredential cred = new System.Net.NetworkCredential();
-                cred.Domain = "saberlogicllc";
-                cred.UserName = "administrator";
-                cred.Password = "d7cGydCd014lfKHwjuuz";
-
-                ssrsSvc.Credentials = cred;
-
                 List<dynamic> result = new List<dynamic>();
-                foreach(var rpt in ssrsSvc.ListChildren("/", true))
+                if(request.FolderName.IndexOf("/reports") == -1)
+                {
+                    request.FolderName = "/reports/" + request.FolderName;
+                }
+                foreach (var rpt in ssrsSvc.ListChildren(request.FolderName, true))
                 {
                     result.Add(new
                     {
-                        Name = rpt.Name
+                        Name = rpt.Name,
+                        Type = rpt.TypeName
                     });
                 }
 
                 response.Data = JsonConvert.SerializeObject(result);
-
             }
             catch (Exception ex) //catch any errors
             {
@@ -139,6 +118,33 @@ namespace bezlio.rdb.plugins
             return response;
         }
 
+        public static async Task<RemoteDataBrokerResponse> GetReportParameters(RemoteDataBrokerRequest rdbRequest)
+        {
+            SSRSDataModel request = JsonConvert.DeserializeObject<SSRSDataModel>(rdbRequest.Data);
+
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = true;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
+            try
+            {
+                SSRSReport ssrs = new SSRSReport();
+
+                response.Data = JsonConvert.SerializeObject(ssrs.GetParameters(request.FolderName, request.ReportName));
+            }
+            catch (Exception ex)
+            {
+                if (!String.IsNullOrEmpty(ex.Message))
+                    response.ErrorText += ex.InnerException;
+
+                response.Error = true;
+                response.ErrorText += ex.Message;
+            }
+
+            return response;
+        }
+
         public static async Task<RemoteDataBrokerResponse> ReturnAsPDF(RemoteDataBrokerRequest rdbRequest)
         {
             SSRSDataModel request = JsonConvert.DeserializeObject<SSRSDataModel>(rdbRequest.Data);
@@ -147,18 +153,18 @@ namespace bezlio.rdb.plugins
             response.Compress = true;
             response.RequestId = rdbRequest.RequestId;
             response.DataType = "applicationJSON";
-            
+
             try
             {
                 SSRSReport ssrs = new SSRSReport();
 
-                response.Data = JsonConvert.SerializeObject(ssrs.GetAsPDF());
+                response.Data = JsonConvert.SerializeObject(ssrs.GetAsPDF(request.FolderName, request.ReportName));
             }
             catch (Exception ex)
             {
                 if (!String.IsNullOrEmpty(ex.Message))
                 {
-                    response.ErrorText += ex.InnerException;   
+                    response.ErrorText += ex.InnerException;
                 }
 
                 response.Error = true;
@@ -169,5 +175,12 @@ namespace bezlio.rdb.plugins
         }
 
         //any other custom methods
+        private static string getCfgPath()
+        {
+            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            string cfgPath = asmPath + @"\" + "SSRS.dll.config";
+
+            return cfgPath;
+        }
     }
 }
