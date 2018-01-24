@@ -8,5 +8,6 @@
         public string UserName { get; set; }
         public string Password { get; set; }
         public string ExecUrl { get; set; }
+        public string RptSvcUrl { get; set; }
     }
 }
