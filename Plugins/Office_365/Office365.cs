@@ -45,7 +45,7 @@ namespace bezlio.rdb.plugins
     }
     #endregion
 
-    public class Office_365
+    public class Office365
     {
         #region ResponseObject
         public static RemoteDataBrokerResponse GetResponseObject(string requestId, bool compress)
