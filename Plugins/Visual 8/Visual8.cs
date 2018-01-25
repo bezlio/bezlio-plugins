@@ -97,9 +97,17 @@ namespace bezlio.rdb.plugins
                                 if (parms.Length == (int)o.GetType().GetProperty("Count").GetValue(o)) {
                                     // It does, now we need to create an object array
                                     List<object> objList = new List<object>();
+                                    var i = 0;
+                                    var values = o.Values().ToList();
                                     foreach (var p in parms) {
-                                        // Convert it to the type that the parameter is looking for
-                                        objList.Add(Convert.ChangeType(((JProperty)o.First).Value, p.ParameterType));
+                                        // Add the parameter to the objects we will pass to the method
+                                        objList.Add(
+                                            Convert.ChangeType(
+                                                ((JValue)(values[i])).Value,
+                                                p.ParameterType
+                                            )
+                                        );
+                                        i++;
                                     }
                                     // Invoke our method
                                     method.Invoke(obj, objList.ToArray());

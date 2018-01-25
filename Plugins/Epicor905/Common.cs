@@ -31,7 +31,7 @@ namespace bezlio.rdb.plugins
                             BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
                             Type.DefaultBinder, epicorConn, new Object[] { companyId });
 
-                if (plantId != "")
+                if (!string.IsNullOrEmpty(plantId))
                 {
                     epicorConn.GetType().InvokeMember("PlantID",
                          BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,

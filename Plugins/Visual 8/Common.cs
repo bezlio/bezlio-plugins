@@ -42,10 +42,10 @@ namespace bezlio.rdb.plugins
                     Type dbms = LSACore.GetType("Lsa.Data.Dbms");
                     // Create an instance of DBMS
                     var o = Activator.CreateInstance(dbms);
-                    // We want DBMS OpenDirect method with 4 string parameters, the last is the client folder with the configuraiton
-                    MethodInfo m = dbms.GetMethod("OpenLocal", new Type[] { typeof(String), typeof(String), typeof(String), typeof(String) });
+                    // We want DBMS OpenDirect method with 6 string parameters
+                    MethodInfo m = dbms.GetMethod("OpenDirect", new Type[] { typeof(String), typeof(String), typeof(String), typeof(String), typeof(String), typeof(String) });
                     // Execute the method with our connection info
-                    m.Invoke(o, new object[] { connection.InstanceName, connection.UserName, connection.Password, clientLocation });
+                    m.Invoke(o, new object[] { connection.InstanceName, connection.Provider, connection.Driver, connection.DataSource, connection.UserName, connection.Password });
                     // If this passes we are good
                     return;
                 } catch (Exception e) {

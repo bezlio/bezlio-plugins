@@ -28,6 +28,26 @@ namespace bezlio.rdb.plugins.Properties {
         [global::System.Configuration.DefaultSettingValueAttribute(@"
                   [
                   {
+                  'connectionName': 'Friendly Connection Name',
+                  'serverAddress': 'SQL_SERVER',
+                  'databaseName': 'DATABASE_NAME',
+                  'userName': 'SQL_USER_NAME',
+                  'password': 'SQL_USER_PASSWORD'
+                  }
+                  ]
+                
+")]
+        public string connections {
+            get {
+                return ((string)(this["connections"]));
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute(@"
+                  [
+                  {
                   'locationName': 'Friendly Name',
                   'locationPath': 'C:\\Path\\Reports\\'
                   },
@@ -38,29 +58,12 @@ namespace bezlio.rdb.plugins.Properties {
                   ]
                 
 ")]
-        public string rptFileLocations {
+        public string rptSvrLocation {
             get {
-                return ((string)(this["rptFileLocations"]));
+                return ((string)(this["rptSvrLocation"]));
             }
-        }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute(@"
-                  [
-                  {
-                  'connectionName': 'Friendly Connection Name',
-                  'serverAddress': 'SQL_SERVER',
-                  'databaseName': 'DATABASE_NAME',
-                  'userName': 'SQL_USER_NAME',
-                  'password': 'SQL_USER_PASSWORD'
-                  }
-                  ]
-                
-")]
-        public string connection {
-            get {
-                return ((string)(this["connection"]));
+            set {
+                this["rptSvrLocation"] = value;
             }
         }
     }
