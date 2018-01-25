@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Epicor10 Plugin", "Plugins\Epicor10\Epicor10 Plugin.csproj", "{F571322C-133E-4937-8869-C617F5785A41}"
 EndProject
@@ -37,7 +37,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "REST Plugin", "Plugins\REST
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SSRS Plugin", "Plugins\SSRS Plugin\SSRS Plugin.csproj", "{C378D230-2DDC-407D-B26A-CB65E78C79E3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Office_365", "Plugins\Office_365\Office_365.csproj", "{C378D230-2DDC-407D-B26A-CB65E78C79E3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Office_365", "Plugins\Office_365\Office_365.csproj", "{F906EC2E-4C3A-4876-81BE-C232FF82D490}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicsCRM", "Plugins\DynamicsCRM\DynamicsCRM.csproj", "{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}"
 EndProject
@@ -186,6 +186,14 @@ Global
 		{C378D230-2DDC-407D-B26A-CB65E78C79E3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C378D230-2DDC-407D-B26A-CB65E78C79E3}.Release|x86.ActiveCfg = Release|x86
 		{C378D230-2DDC-407D-B26A-CB65E78C79E3}.Release|x86.Build.0 = Release|x86
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Debug|x86.ActiveCfg = Debug|x86
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Debug|x86.Build.0 = Debug|x86
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Release|x86.ActiveCfg = Release|x86
+		{F906EC2E-4C3A-4876-81BE-C232FF82D490}.Release|x86.Build.0 = Release|x86
 		{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E53BE69F-C7F6-4E49-9DBD-E0E883DF8B15}.Debug|x86.ActiveCfg = Debug|x86

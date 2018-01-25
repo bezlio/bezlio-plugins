@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C378D230-2DDC-407D-B26A-CB65E78C79E3}</ProjectGuid>
+    <ProjectGuid>{F906EC2E-4C3A-4876-81BE-C232FF82D490}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Office_365</RootNamespace>
-    <AssemblyName>Office_365</AssemblyName>
+    <RootNamespace>Office365</RootNamespace>
+    <AssemblyName>Office365</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -49,7 +49,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Exchange.WebServices">
-      <HintPath>..\..\..\..\Desktop\Microsoft.Exchange.WebServices.dll</HintPath>
+      <HintPath>..\..\Microsoft.Exchange.WebServices.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -65,7 +65,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Office_365.cs" />
+    <Compile Include="Office365.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
