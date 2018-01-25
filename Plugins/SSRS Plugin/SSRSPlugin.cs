@@ -50,8 +50,8 @@ namespace bezlio.rdb.plugins
 
             List<SSRSConnectionInfo> ssrsConn = JsonConvert.DeserializeObject<List<SSRSConnectionInfo>>(xConnection.Value);
 
-            ssrsSvc = new ReportingService2010();
-            ssrsExec = new ReportExecutionService();
+            ssrsSvc = new ReportingService2010(ssrsConn[0].RptSvcUrl);
+            ssrsExec = new ReportExecutionService(ssrsConn[0].ExecUrl);
             creds = new NetworkCredential();
 
             creds.Domain = ssrsConn[0].Domain;
