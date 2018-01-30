@@ -26,13 +26,23 @@ namespace bezlio.rdb.plugins {
     #region MessageModel
     class Message_Model {
         public string From { get; set; }
+        public string FromAddress { get; set; }
         public DateTime DateTimeReceived { get; set; }
         public string Subject { get; set; }
+        public string Message { get; set; }
         public bool Read { get; set; }
         public string Id { get; set; }
     }
     #endregion
 
+    class ProcessMsg_Model {
+        public string UserName { get; set; }
+        public string Password { get; set; }
+        public string Id { get; set; }
+        public string ProcessType { get; set; }
+        public string Destination { get; set; }
+    }
+    
     #region Appointment_Model
     class Apt_Model {
         public string Subject { get; set; }
@@ -79,7 +89,11 @@ namespace bezlio.rdb.plugins {
 
                 exchange.Url = new System.Uri("https://outlook.office365.com/EWS/Exchange.asmx");
 
+                PropertySet propSet = new PropertySet(BasePropertySet.FirstClassProperties);
+                propSet.RequestedBodyType = BodyType.Text;
+
                 ItemView view = new ItemView(request.MsgCnt);
+                view.PropertySet = propSet;
 
                 SearchFilter searchFilter;
                 if (request.SubjectFilter != null) {
@@ -90,9 +104,14 @@ namespace bezlio.rdb.plugins {
 
                 FindItemsResults <Item> emails = exchange.FindItems(WellKnownFolderName.Inbox, searchFilter, view);
                 List<Message_Model> emailList = new List<Message_Model>();
+                foreach(EmailMessage msg in emails) {
+                    msg.Load(propSet);
+                }
 
                 emailList = emails.Select(msg => new Message_Model {
                     From = ((EmailMessage)msg).From.Name,
+                    FromAddress = ((EmailMessage)msg).From.Address,
+                    Message = msg.Body.Text,
                     Subject = msg.Subject,
                     DateTimeReceived = msg.DateTimeReceived,
                     Read = ((EmailMessage)msg).IsRead,
@@ -148,6 +167,61 @@ namespace bezlio.rdb.plugins {
             return response;
         }
         #endregion
+
+        public static async Task<RemoteDataBrokerResponse> ProcessEmail(RemoteDataBrokerRequest rdbRequest){
+            ProcessMsg_Model request = JsonConvert.DeserializeObject<ProcessMsg_Model>(rdbRequest.Data);
+
+            RemoteDataBrokerResponse response = GetResponseObject(rdbRequest.RequestId, true);
+
+            try {
+                ExchangeService exchange = new ExchangeService();
+                exchange.TraceEnabled = true;
+                exchange.TraceFlags = TraceFlags.All;
+
+                exchange.Credentials = new WebCredentials(request.UserName, request.Password);
+                exchange.Url = new System.Uri("https://outlook.office365.com/EWS/Exchange.asmx");
+
+                //delete or move switch
+                switch(request.ProcessType){
+                    case "Move":
+                        //create subfolder if it doesn't exist
+                        FolderView folderView = new FolderView(1);
+                        SearchFilter folderFilter = new SearchFilter.ContainsSubstring(FolderSchema.DisplayName, request.Destination);
+                        FindFoldersResults destinationResults = exchange.FindFolders(WellKnownFolderName.Inbox, folderFilter, folderView);
+
+                        Folder destinationFolder;
+                        if (destinationResults.TotalCount == 0) {
+                            destinationFolder = new Folder(exchange);
+                            destinationFolder.DisplayName = request.Destination;
+                            destinationFolder.Save(WellKnownFolderName.Inbox);
+                        } else {
+                            destinationFolder = Folder.Bind(exchange, destinationResults.Folders.Single().Id);
+                        }
+
+                        //move items to specified folder
+                        PropertySet propSet = new PropertySet(BasePropertySet.FirstClassProperties);
+                        propSet.RequestedBodyType = BodyType.HTML;
+
+                        EmailMessage emailMsg = EmailMessage.Bind(exchange, request.Id, propSet);
+                        emailMsg.Move(destinationFolder.Id);
+
+                        response.Data = JsonConvert.SerializeObject("Email Id: " + request.Id + " processed!");
+                        break;
+                    case "Delete":
+                        break;
+                }
+
+            } catch (Exception ex) {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString())) {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
+                response.Error = true;
+                response.ErrorText = ex.Message;
+            }
+
+            return response;
+        }
 
         #region GetCalendar
         public static async Task<RemoteDataBrokerResponse> GetCalendar(RemoteDataBrokerRequest rdbRequest) {
