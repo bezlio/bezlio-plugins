@@ -31,6 +31,7 @@ namespace bezlio.rdb.plugins {
         public string Subject { get; set; }
         public string Message { get; set; }
         public bool Read { get; set; }
+        public List<Attachment> Attachments { get; set; }
         public string Id { get; set; }
     }
     #endregion
@@ -90,24 +91,27 @@ namespace bezlio.rdb.plugins {
                 exchange.Url = new System.Uri("https://outlook.office365.com/EWS/Exchange.asmx");
 
                 PropertySet propSet = new PropertySet(BasePropertySet.FirstClassProperties);
-                propSet.RequestedBodyType = BodyType.Text;
+                propSet.RequestedBodyType = BodyType.HTML;
 
                 ItemView view = new ItemView(request.MsgCnt);
                 view.PropertySet = propSet;
 
                 SearchFilter searchFilter;
-                if (request.SubjectFilter != null) {
+                if (request.SubjectFilter != "") {
                     searchFilter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, request.SubjectFilter);
                 } else {
                     searchFilter = new SearchFilter.Exists(ItemSchema.Subject);
                 }
 
                 FindItemsResults <Item> emails = exchange.FindItems(WellKnownFolderName.Inbox, searchFilter, view);
-                List<Message_Model> emailList = new List<Message_Model>();
-                foreach(EmailMessage msg in emails) {
-                    msg.Load(propSet);
-                }
+                //foreach(EmailMessage msg in emails) {
+                //    msg.Load(propSet);
+                //    foreach(Attachment attch in msg.Attachments) {
+                //        attch.Load();
+                //    }
+                //}
 
+                List<Message_Model> emailList = new List<Message_Model>();
                 emailList = emails.Select(msg => new Message_Model {
                     From = ((EmailMessage)msg).From.Name,
                     FromAddress = ((EmailMessage)msg).From.Address,
@@ -115,7 +119,8 @@ namespace bezlio.rdb.plugins {
                     Subject = msg.Subject,
                     DateTimeReceived = msg.DateTimeReceived,
                     Read = ((EmailMessage)msg).IsRead,
-                    Id = msg.Id.UniqueId
+                    Attachments = msg.Attachments.ToList(),
+                    Id = msg.Id.UniqueId,
                 }).ToList();
 
                 response.Data = JsonConvert.SerializeObject(emailList);
@@ -179,7 +184,7 @@ namespace bezlio.rdb.plugins {
                 exchange.TraceFlags = TraceFlags.All;
 
                 exchange.Credentials = new WebCredentials(request.UserName, request.Password);
-                exchange.Url = new System.Uri("https://outlook.office365.com/EWS/Exchange.asmx");
+                exchange.Url = new Uri("https://outlook.office365.com/EWS/Exchange.asmx");
 
                 //delete or move switch
                 switch(request.ProcessType){
@@ -208,6 +213,13 @@ namespace bezlio.rdb.plugins {
                         response.Data = JsonConvert.SerializeObject("Email Id: " + request.Id + " processed!");
                         break;
                     case "Delete":
+                        PropertySet delSet = new PropertySet(BasePropertySet.FirstClassProperties);
+                        delSet.RequestedBodyType = BodyType.HTML;
+
+                        EmailMessage deleteMsg = EmailMessage.Bind(exchange, request.Id, delSet);
+                        deleteMsg.Delete(DeleteMode.SoftDelete);
+
+                        response.Data = JsonConvert.SerializeObject("Email Id: " + request.Id + " processed!");
                         break;
                 }
 
