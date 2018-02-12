@@ -84,11 +84,12 @@ namespace bezlio.rdb.plugins {
                 SearchFilter searchFilter;
                 if (request.SubjectFilter != null) {
                     searchFilter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, request.SubjectFilter);
-                } else {
+                }
+                else {
                     searchFilter = new SearchFilter.Exists(ItemSchema.Subject);
                 }
 
-                FindItemsResults <Item> emails = exchange.FindItems(WellKnownFolderName.Inbox, searchFilter, view);
+                FindItemsResults<Item> emails = exchange.FindItems(WellKnownFolderName.Inbox, searchFilter, view);
                 List<Message_Model> emailList = new List<Message_Model>();
 
                 emailList = emails.Select(msg => new Message_Model {
