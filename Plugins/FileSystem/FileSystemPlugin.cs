@@ -13,6 +13,7 @@ namespace bezlio.rdb.plugins
     {
         public string Context { get; set; }
         public string FileName { get; set; }
+        public string ListFilter { get; set; }
         public byte[] Bytes { get; set; }
     }
     public class FileSystem
@@ -124,22 +125,19 @@ namespace bezlio.rdb.plugins
             response.RequestId = rdbRequest.RequestId;
             response.DataType = "applicationJSON";
 
-            try
-            {
+            try {
                 // Settings do not seem to reflect in cleanly, we will read the settings directly
                 string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 string cfgPath = asmPath + @"\" + "FileSystem.dll.config";
                 string strLocations = "";
 
-                if (File.Exists(cfgPath))
-                {
+                if (File.Exists(cfgPath)) {
                     // Load in the cfg file
                     XDocument xConfig = XDocument.Load(cfgPath);
 
                     // Get the setting for the debug log destination
                     XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "fileSystemLocations").FirstOrDefault();
-                    if (xLocations != null)
-                    {
+                    if (xLocations != null) {
                         strLocations = xLocations.Value;
                     }
                 }
@@ -148,13 +146,18 @@ namespace bezlio.rdb.plugins
                 List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
 
                 // Now pick the location path by the name specified
-                if (locations.Where((l) => l.LocationName.Equals(request.Context)).Count() == 0)
-                {
+                if (locations.Where((l) => l.LocationName.Equals(request.Context)).Count() == 0) {
                     response.Error = true;
                     response.ErrorText = "Could not locate a location in the plugin config file with the name " + request.Context;
                     return response;
                 }
                 string locationPath = locations.Where((l) => l.LocationName.Equals(request.Context)).FirstOrDefault().LocationPath;
+
+                //sub-folder creation
+                if (request.FileName.Contains(@"\")) {
+                    string directory = request.FileName.Substring(0, request.FileName.LastIndexOf(@"\"));
+                    Directory.CreateDirectory(locationPath + @"\" + directory);
+                }
 
                 File.WriteAllBytes(locationPath + "/" + request.FileName, request.Bytes);
                 response.Data = JsonConvert.SerializeObject("success");
@@ -205,7 +208,7 @@ namespace bezlio.rdb.plugins
 
                 // Return the data table
                 List<dynamic> result = new List<dynamic>();
-                foreach (var f in Directory.GetFiles(locationPath, @"*", SearchOption.AllDirectories))
+                foreach (var f in Directory.GetFiles(locationPath, request.ListFilter, SearchOption.AllDirectories))
                 {
                     FileInfo fi = new FileInfo(f);
                     result.Add(new
