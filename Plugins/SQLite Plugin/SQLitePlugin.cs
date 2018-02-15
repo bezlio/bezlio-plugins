@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -45,7 +44,7 @@ namespace bezlio.rdb.plugins
         public static List<SQLiteFileLocations> GetLocations()
         {
             string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SQLite.dll.config";
+            string cfgPath = asmPath + @"\" + "SQLiteTest.dll.config";
             string strConnections = "";
             if (File.Exists(cfgPath))
             {
@@ -449,7 +448,7 @@ namespace bezlio.rdb.plugins
             switch (_databaseType)
             {
                 case "SQLite":
-                    oCommand = new SqlCommand();
+                    oCommand = new SQLiteCommand();
                     break;
             }
 
@@ -464,7 +463,7 @@ namespace bezlio.rdb.plugins
             switch (_databaseType)
             {
                 case "SQLite":
-                    oAdapter = new SqlDataAdapter((SqlCommand)_command);
+                    oAdapter = new SQLiteDataAdapter((SQLiteCommand)_command);
                     break;
             }
 
@@ -496,10 +495,10 @@ namespace bezlio.rdb.plugins
 
                         command.CommandText = _sql;
                         oAdapter = getAdapter("SQLite", oCommand);
-                        ((SqlDataAdapter)oAdapter).Fill(dt);
-                        //((SqlCommand)oCommand).Connection.Close();
+                        ((SQLiteDataAdapter)oAdapter).Fill(dt);
+                        //((SQLiteCommand)oCommand).Connection.Close();
                     }
-                    //((SqlCommand)oCommand).Connection = (SqlConnection)_connection;
+                    //((SQLiteCommand)oCommand).Connection = (SqlConnection)_connection;
 
                     break;
             }
@@ -532,7 +531,7 @@ namespace bezlio.rdb.plugins
 
                         command.CommandText = _sql;
                         command.Connection.Open();
-                        intRowsAffected = ((SqlCommand)oCommand).ExecuteNonQuery();
+                        intRowsAffected = ((SQLiteCommand)oCommand).ExecuteNonQuery();
                     }
                     break;
             }
@@ -554,16 +553,16 @@ namespace bezlio.rdb.plugins
             {
                 string value = parameter.Value.ToString().Replace("'", "''");
                 double number;
-                SqlParameter param;
+                SQLiteParameter param;
 
                 if (!(value.StartsWith("\"") && value.EndsWith("\"")) && double.TryParse(value, out number))
                 {
-                    param = new SqlParameter(parameter.Key, number);
+                    param = new SQLiteParameter(parameter.Key, number);
                     param.DbType = DbType.Double;
                 }
                 else
                 {
-                    param = new SqlParameter(parameter.Key, value);
+                    param = new SQLiteParameter(parameter.Key, value);
                     param.DbType = DbType.String;
                 }
 
