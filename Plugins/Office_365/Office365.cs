@@ -43,8 +43,14 @@ namespace bezlio.rdb.plugins {
 
     #region MessageModel
     class Message_Model {
-        public string From { get; set; }
-        public string FromAddress { get; set; }
+        public string EmailFrom { get; set; }
+        public string EmailFromAddress { get; set; }
+        public string EmailTo { get; set; }
+        public string EmailToAddress { get; set; }
+        public string EmailCC { get; set; }
+        public string EmailCCAddress { get; set; }
+        public string EmailBCC { get; set; }
+        public string EmailBCCAddress { get; set; }
         public DateTime DateTimeReceived { get; set; }
         public string Subject { get; set; }
         public string Message { get; set; }
@@ -148,8 +154,9 @@ namespace bezlio.rdb.plugins {
 
                 List<Message_Model> emailList = new List<Message_Model>();
                 emailList = emails.Select(msg => new Message_Model {
-                    From = ((EmailMessage)msg).From.Name,
-                    FromAddress = ((EmailMessage)msg).From.Address,
+                    EmailFrom = ((EmailMessage)msg).From.Name,
+                    EmailFromAddress = ((EmailMessage)msg).From.Address,
+                    //EmailTo = ((EmailMessage)msg)
                     Message = msg.Body.Text,
                     Subject = msg.Subject,
                     DateTimeReceived = msg.DateTimeReceived,
@@ -306,8 +313,8 @@ namespace bezlio.rdb.plugins {
                     eml.Load(propSet);
                     //add email to list for SQL processing client side
                     emailList.Add(new Message_Model {
-                        From = ((EmailMessage)eml).From.Name,
-                        FromAddress = ((EmailMessage)eml).From.Address,
+                        EmailFrom = ((EmailMessage)eml).From.Name,
+                        EmailFromAddress = ((EmailMessage)eml).From.Address,
                         Message = eml.Body.Text,
                         Subject = eml.Subject,
                         DateTimeReceived = eml.DateTimeReceived,
