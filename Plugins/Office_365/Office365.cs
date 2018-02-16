@@ -297,7 +297,7 @@ namespace bezlio.rdb.plugins {
                 view.PropertySet = propSet;
 
                 SearchFilter searchFilter;
-                if (request.SubjectFilter != "" && request.SubjectFilter == null) {
+                if (request.SubjectFilter != "" && request.SubjectFilter != null) {
                     searchFilter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, request.SubjectFilter);
                 }
                 else {
