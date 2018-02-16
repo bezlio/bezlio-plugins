@@ -44,7 +44,7 @@ namespace bezlio.rdb.plugins
         public static List<SQLiteFileLocations> GetLocations()
         {
             string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "SQLiteTest.dll.config";
+            string cfgPath = asmPath + @"\" + "SQLite.dll.config";
             string strConnections = "";
             if (File.Exists(cfgPath))
             {
@@ -52,7 +52,7 @@ namespace bezlio.rdb.plugins
                 XDocument xConfig = XDocument.Load(cfgPath);
 
                 // Get the setting for the debug log destination
-                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "SQLiteFileLocationss").FirstOrDefault();
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "SQLiteFileLocations").FirstOrDefault();
                 if (xConnections != null)
                 {
                     strConnections = xConnections.Value;
@@ -60,17 +60,16 @@ namespace bezlio.rdb.plugins
             }
 
             var contextLocations = JsonConvert.DeserializeObject<List<SQLiteFileLocations>>(strConnections);
-            foreach (var context in contextLocations)
-            {
-                if (Directory.Exists(context.LocationPath))
-                {
-                    var ext = new List<string> { ".sql" };
-                    var contentFiles = Directory.GetFiles(context.LocationPath, "*.*", SearchOption.AllDirectories).Where(s => ext.Contains(Path.GetExtension(s)));
-                    context.ContentFileNames = new List<string>();
+            if (contextLocations != null) {
+                foreach (var context in contextLocations) {
+                    if (Directory.Exists(context.LocationPath)) {
+                        var ext = new List<string> { ".sql" };
+                        var contentFiles = Directory.GetFiles(context.LocationPath, "*.*", SearchOption.AllDirectories).Where(s => ext.Contains(Path.GetExtension(s)));
+                        context.ContentFileNames = new List<string>();
 
-                    foreach (string fileName in contentFiles)
-                    {
-                        context.ContentFileNames.Add(Path.GetFileNameWithoutExtension(fileName));
+                        foreach (string fileName in contentFiles) {
+                            context.ContentFileNames.Add(Path.GetFileNameWithoutExtension(fileName));
+                        }
                     }
                 }
             }
@@ -100,43 +99,51 @@ namespace bezlio.rdb.plugins
 
         public static string GetFolderNames(List<SQLiteFileLocations> contextLocations)
         {
-            var result = "[";
-            foreach (var location in contextLocations)
-            {
-                result += location.LocationName + ",";
+            string result = "";
+            if (contextLocations != null) {
+                if (contextLocations != null) {
+                    result = "[";
+                    foreach (var location in contextLocations) {
+                        result += location.LocationName + ",";
+                    }
+                    result.TrimEnd(',');
+                    result += "]";
+                }
             }
-            result.TrimEnd(',');
-            result += "]";
+
             return result;
         }
 
         public static string GetQueriesCascadeDefinition(List<SQLiteFileLocations> contextLocations, string contextPropertyName)
         {
-            var result = "[";
-            foreach (var context in contextLocations)
-            {
-                result += contextPropertyName + ":" + context.LocationName + "[";
-                foreach (var fileName in context.ContentFileNames)
-                {
-                    result += fileName + ",";
+            string result = "[";
+            if (contextLocations != null) {
+                foreach (var context in contextLocations) {
+                    result += contextPropertyName + ":" + context.LocationName + "[";
+                    foreach (var fileName in context.ContentFileNames) {
+                        result += fileName + ",";
+                    }
+                    result.TrimEnd(new char[] { ',' });
+                    result += "],";
                 }
                 result.TrimEnd(new char[] { ',' });
-                result += "],";
+                result += "]";
             }
-            result.TrimEnd(new char[] { ',' });
-            result += "]";
             return result;
         }
 
         public static string GetConnectionNames()
         {
-            var result = "[";
-            foreach (var connection in GetConnections())
-            {
-                result += connection.ConnectionName + ",";
+            string result = "";
+            var con = GetConnections();
+            if (con != null) {
+                result = "[";
+                foreach (var connection in GetConnections()) {
+                    result += connection.ConnectionName + ",";
+                }
+                result.TrimEnd(',');
+                result += "]";
             }
-            result.TrimEnd(',');
-            result += "]";
             return result;
         }
 
