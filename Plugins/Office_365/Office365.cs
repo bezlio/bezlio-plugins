@@ -103,7 +103,7 @@ namespace bezlio.rdb.plugins {
                 UserName = "Email Address",
                 Password = "Email password",
                 MsgCnt = 0,
-                SubjectFilter = "Email subject filter - leave blank for none",
+                SubjectFilter = "Email subject filter - leave blank for none (EXC- for exclude, INC- for include)",
                 AttachmentLocation = "Location to store attachments - used only for Local Processing method"
             };
 
@@ -298,11 +298,19 @@ namespace bezlio.rdb.plugins {
 
                 SearchFilter searchFilter;
                 if (request.SubjectFilter != "" && request.SubjectFilter != null) {
-                    searchFilter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, request.SubjectFilter);
+                    if(request.SubjectFilter.Contains("EXC")) {
+                        searchFilter = new SearchFilter.IsNotEqualTo(ItemSchema.Subject, request.SubjectFilter.Substring(request.SubjectFilter.IndexOf("-") + 1, (request.SubjectFilter.Length - (request.SubjectFilter.IndexOf("-") + 1))));
+                    } else if(request.SubjectFilter.Contains("INC")){
+                        searchFilter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, request.SubjectFilter.Substring(request.SubjectFilter.IndexOf("-") + 1, (request.SubjectFilter.Length - (request.SubjectFilter.IndexOf("-") + 1))));
+                    } else {
+                        searchFilter = new SearchFilter.ContainsSubstring(ItemSchema.Subject, request.SubjectFilter);
+                    }
                 }
                 else {
                     searchFilter = new SearchFilter.Exists(ItemSchema.Subject);
                 }
+
+                //INC-Bezlio Day
 
                 //get mail items according to filters
                 FindItemsResults<Item> emails = exchange.FindItems(WellKnownFolderName.Inbox, searchFilter, view);
@@ -315,6 +323,9 @@ namespace bezlio.rdb.plugins {
                     emailList.Add(new Message_Model {
                         EmailFrom = ((EmailMessage)eml).From.Name,
                         EmailFromAddress = ((EmailMessage)eml).From.Address,
+                        EmailToAddress = ((EmailMessage)eml).ToRecipients.Count > 0 ? ((EmailMessage)eml).ToRecipients.Aggregate((a, b) => a + "~" + b).ToString() : "",
+                        EmailCCAddress = ((EmailMessage)eml).CcRecipients.Count > 0 ? ((EmailMessage)eml).CcRecipients.Aggregate((a, b) => a + "~" + b).ToString() : "",
+                        EmailBCCAddress = ((EmailMessage)eml).BccRecipients.Count > 0 ? ((EmailMessage)eml).BccRecipients.Aggregate((a, b) => a + "~" + b).ToString() : "",
                         Message = eml.Body.Text,
                         Subject = eml.Subject,
                         DateTimeReceived = eml.DateTimeReceived,
@@ -325,29 +336,31 @@ namespace bezlio.rdb.plugins {
                     eml.Attachments.AsParallel().ForAll(attch => {
                         attch.Load();
 
-                        //copied in from file system plugin for ease of use
-                        string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                        string cfgPath = asmPath + @"\" + "Office365.dll.config";
-                        string strLocations = "";
+                        if (request.SubFolderLocation != null && request.SubFolderLocation != "") {
+                            //copied in from file system plugin for ease of use
+                            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                            string cfgPath = asmPath + @"\" + "Office365.dll.config";
+                            string strLocations = "";
 
-                        if (File.Exists(cfgPath)) {
-                            // Load in the cfg file
-                            XDocument xConfig = XDocument.Load(cfgPath);
+                            if (File.Exists(cfgPath)) {
+                                // Load in the cfg file
+                                XDocument xConfig = XDocument.Load(cfgPath);
 
-                            // Get the setting for the debug log destination
-                            XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "localFileStorage").FirstOrDefault();
-                            if (xLocations != null) {
-                                strLocations = xLocations.Value;
+                                // Get the setting for the debug log destination
+                                XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "localFileStorage").FirstOrDefault();
+                                if (xLocations != null) {
+                                    strLocations = xLocations.Value;
+                                }
                             }
+
+                            // Deserialize the values from Settings
+                            List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
+
+                            // Now pick the location path by the name specified
+                            string locationPath = locations.Where((l) => l.LocationName.Equals(request.AttachmentLocation)).FirstOrDefault().LocationPath;
+
+                            File.WriteAllBytes(locationPath + "/" + attch.Id.Substring(attch.Id.Length - 10, 10) + attch.Name.Substring(attch.Name.IndexOf('.'), attch.Name.Length - attch.Name.IndexOf('.')), ((FileAttachment)attch).Content);
                         }
-
-                        // Deserialize the values from Settings
-                        List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
-
-                        // Now pick the location path by the name specified
-                        string locationPath = locations.Where((l) => l.LocationName.Equals(request.AttachmentLocation)).FirstOrDefault().LocationPath;
-
-                        File.WriteAllBytes(locationPath + "/" + attch.Id.Substring(attch.Id.Length - 10, 10) + attch.Name.Substring(attch.Name.IndexOf('.'), attch.Name.Length - attch.Name.IndexOf('.')), ((FileAttachment)attch).Content);
                     });
 
                     //process email to avoid running through again
@@ -373,17 +386,15 @@ namespace bezlio.rdb.plugins {
                             propSet.RequestedBodyType = BodyType.HTML;
 
                             eml.Move(destinationFolder.Id);
-
-                            //response.Data += JsonConvert.SerializeObject("Email Id: " + eml.Id + " processed!");
                             break;
                         case "Delete":
                             PropertySet propSetDel = new PropertySet(BasePropertySet.FirstClassProperties);
                             propSetDel.RequestedBodyType = BodyType.HTML;
 
-                            //EmailMessage deleteMsg = EmailMessage.Bind(exchange, request.Id, delSet);
                             eml.Delete(DeleteMode.SoftDelete);
+                            break;
 
-                            //response.Data += JsonConvert.SerializeObject("Email Id: " + eml.Id + " processed!");
+                        default:
                             break;
                     }
                 });
