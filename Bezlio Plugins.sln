@@ -43,7 +43,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicsCRM", "Plugins\Dyna
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TensorFlow Plugin", "TensorFlow Plugin\TensorFlow Plugin.csproj", "{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon Plugin", "Amazon Plugin\Amazon Plugin.csproj", "{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon Plugin", "Plugins\Amazon Plugin\Amazon Plugin.csproj", "{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -218,8 +218,8 @@ Global
 		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Debug|x86.Build.0 = Debug|x86
 		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|x86.ActiveCfg = Release|Any CPU
-		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|x86.Build.0 = Release|Any CPU
+		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|x86.ActiveCfg = Release|x86
+		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
