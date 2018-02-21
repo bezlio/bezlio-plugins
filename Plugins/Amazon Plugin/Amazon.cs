@@ -12,7 +12,7 @@ using MarketplaceWebServiceOrders;
 using MarketplaceWebServiceOrders.Model;
 using MWSRecommendationsSectionService;
 using MWSRecommendationsSectionService.Model;
-
+using System.Dynamic;
 
 namespace bezlio.rdb.plugins
 {
@@ -164,11 +164,21 @@ namespace bezlio.rdb.plugins
             RemoteDataBrokerResponse response = GetResponseObject(rdbRequest.RequestId, true);
 
             try {
-                GetOrderRequest orderRequest = new GetOrderRequest();
-                orderRequest.SellerId = sellerId;
+                GetOrderRequest orderRequest = new GetOrderRequest(sellerId, request.orderId.Split(',').ToList());
                 orderRequest.MWSAuthToken = mwsAuthToken;
-                orderRequest.AmazonOrderId = request.orderId.Split(',').ToList();
+               
+                var orderData = ordersClient.GetOrder(orderRequest);
 
+                ListOrderItemsRequest orderItemRequest = new ListOrderItemsRequest(sellerId, request.orderId);
+                orderItemRequest.MWSAuthToken = mwsAuthToken;
+
+                var orderItemData = ordersClient.ListOrderItems(orderItemRequest);
+
+                dynamic data = new ExpandoObject();
+                data.Order = orderData.GetOrderResult.Orders[0];
+                data.OrderItems = orderItemData.ListOrderItemsResult.OrderItems;
+                               
+                response.Data = JsonConvert.SerializeObject(data);
             }
             catch (Exception ex) {
                 if (!string.IsNullOrEmpty(ex.InnerException.ToString())) {
