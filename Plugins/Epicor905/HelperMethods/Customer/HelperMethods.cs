@@ -7,6 +7,17 @@ using System.Threading.Tasks;
 
 namespace bezlio.rdb.plugins.HelperMethods.Customer
 {
+    class Customer_CreateCustomerModel
+    {
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public List<KeyValuePair<string, string>> Parameters { get; set; }
+
+        public Customer_CreateCustomerModel()  {
+            Parameters = new List<KeyValuePair<string, string>>();
+        }
+    }
+
     class Customer_CreateContactModel
     {
         public string Connection { get; set; }
@@ -22,6 +33,55 @@ namespace bezlio.rdb.plugins.HelperMethods.Customer
     
     public class CustomerHelperMethods
     {
+        public static async Task<RemoteDataBrokerResponse> Customer_CreateCustomerModel(RemoteDataBrokerRequest rdbRequest)
+        {
+            // Deserialize the request object
+            Customer_CreateCustomerModel request = JsonConvert.DeserializeObject<Customer_CreateCustomerModel>(rdbRequest.Data);
+
+            // Create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            // Establish a connection to Epicor
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+
+            try
+            {
+                // Load the referenced BO
+                object bo = Common.GetBusinessObject(epicorConn, "Customer", ref response);
+
+                // Create an instance of the Customer_CreateContactModel and load it up with info on our job
+                Type t = bo.GetType().GetMethod("GetNewCustomer").GetParameters()[0].ParameterType;
+                var ds = JsonConvert.DeserializeObject(@"{}", t, new JsonSerializerSettings());
+                bo.GetType().GetMethod("GetNewCustomer").Invoke(bo, new object[] { ds });
+
+                // Cycle through the passed parameters and update the new ds with those values
+                request.Parameters.ForEach(p => {
+                    ((DataSet)ds).Tables["Customer"].Rows[0][p.Key] = p.Value;
+                });
+
+                //((DataSet)ds).Tables["Customer"].Rows[0]["RowMod"] = "U";
+                // Commit the transaction
+                bo.GetType().GetMethod("Update").Invoke(bo, new object[] { ds });
+
+                // Return the response as success if it got this far
+                response.Data = JsonConvert.SerializeObject(ds);
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
+                response.Error = true;
+                response.ErrorText += ex.Message;
+            }
+            finally { Common.CloseEpicorConnection(epicorConn, ref response); }
+
+            // Return response object
+            return response;
+        }
+
         public static async Task<RemoteDataBrokerResponse> Customer_CreateContactModel(RemoteDataBrokerRequest rdbRequest)
         {
             // Deserialize the request object
