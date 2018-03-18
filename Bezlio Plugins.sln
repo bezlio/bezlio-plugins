@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TensorFlow Plugin", "Tensor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Magento Plugin", "Plugins\Magento Plugin\Magento Plugin.csproj", "{6474A873-F334-4376-BBBE-E21D50819FAE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Magento2", "Plugins\Magento2\Magento2.csproj", "{3547B1ED-091E-4BF0-9461-84A89F08498C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -220,6 +222,14 @@ Global
 		{6474A873-F334-4376-BBBE-E21D50819FAE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6474A873-F334-4376-BBBE-E21D50819FAE}.Release|x86.ActiveCfg = Release|Any CPU
 		{6474A873-F334-4376-BBBE-E21D50819FAE}.Release|x86.Build.0 = Release|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Debug|x86.Build.0 = Debug|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Release|x86.ActiveCfg = Release|Any CPU
+		{3547B1ED-091E-4BF0-9461-84A89F08498C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,7 +1,5 @@
-﻿using Magento.RestApi;
-using Magento.RestApi.Json;
-using Magento.RestApi.Models;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,11 +11,6 @@ using System.Xml.Linq;
 
 namespace bezlio.rdb.plugins
 {
-    // Note: This plugin reference Magento-RestApi (https://github.com/nickvane/Magento-RestApi).  For Newtonsoft compatibility
-    // I had to download that source manually and revise the Newtonsoft versioning to 8.0.3.  Also, line 26 was commented out
-    // on BaseConverter.cs as it impacted which elements were available for serialization.  The compiled version of this DLL
-    // has been placed into the Compiled folder.
-
     public class MagentoDataModel
     {
         public string Connection { get; set; }
@@ -28,10 +21,8 @@ namespace bezlio.rdb.plugins
             Filters = new List<KeyValuePair<string, string>>();
         }
     }
-
-    public class Magento
+    public class Magento2
     {
-
         #region Common
         public static object GetArgs()
         {
@@ -50,8 +41,6 @@ namespace bezlio.rdb.plugins
 
             public string ConnectionName { get; set; }
             public string SiteUrl { get; set; }
-            public string ConsumerKey { get; set; }
-            public string ConsumerSecret { get; set; }
             public string MagentoUserName { get; set; }
             public string MagentoUserPassword { get; set; }
         }
@@ -59,7 +48,7 @@ namespace bezlio.rdb.plugins
         public static List<MagentoConnectionInfo> GetConnections()
         {
             string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "Magento.dll.config";
+            string cfgPath = asmPath + @"\" + "Magento2.dll.config";
             string strConnections = "";
             if (File.Exists(cfgPath))
             {
@@ -100,11 +89,13 @@ namespace bezlio.rdb.plugins
                     response.Error = true;
                     response.ErrorText = "Could not locate a connection in the plugin config file with the name " + name;
                     return new MagentoConnectionInfo();
-                } else
+                }
+                else
                 {
                     return connections.Where((c) => c.ConnectionName.Equals(name)).FirstOrDefault();
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 response.Error = true;
                 response.ErrorText = ex.Message;
@@ -123,50 +114,42 @@ namespace bezlio.rdb.plugins
             return response;
         }
 
-        private static Filter GetFilterObject(List<KeyValuePair<string, string>> filters)
+        private static string GetFilterString(List<KeyValuePair<string, string>> filters)
         {
-            var filter = new Filter();
+            var filter = "searchCriteria";
 
-            foreach (var f in filters)
+            for (int i = 0; i < filters.Count; i++)
             {
-                if (f.Value.Contains(":"))
+                var fieldName = "";
+                var fieldOperator = "eq";
+                var fieldValue = "";
+
+                if (filters[i].Value.Contains(":"))
                 {
-                    switch (f.Value.Split(':')[0])
-                    {
-                        case ">":
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.gt, f.Value.Replace(">:", "")));
-                            break;
-                        case "in":
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.@in, f.Value.Replace("in:", "")));
-                            break;
-                        case "like":
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.like, f.Value.Replace("like:", "")));
-                            break;
-                        case "<":
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.lt, f.Value.Replace("<:", "")));
-                            break;
-                        case "!=":
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.neq, f.Value.Replace("!=:", "")));
-                            break;
-                        case "<>":
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.neq, f.Value.Replace("<>:", "")));
-                            break;
-                        case "nin":
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.@in, f.Value.Replace("nin:", "")));
-                            break;
-                        default:
-                            filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.like, f.Value));
-                            break;
-                    }
+                    fieldName = filters[i].Key;
+                    fieldOperator = filters[i].Value.Split(':')[0];
+                    fieldValue = filters[i].Value.Split(':')[1];
                 }
                 else
                 {
-                    filter.FilterExpressions.Add(new FilterExpression(f.Key, ExpressionOperator.like, f.Value));
+                    fieldName = filters[i].Key;
+                    fieldValue = filters[i].Value;
                 }
-
+                filter += $"[filterGroups][{i}][filters][{i}][field]={fieldName}&searchCriteria[filterGroups][{i}][filters][{i}][value]={fieldValue}&searchCriteria[filterGroups][{i}][filters][{i}][condition_type]={fieldOperator}";
             }
 
             return filter;
+        }
+
+        public static string GetBearerToken(string siteUrl, string userName, string password)
+        {
+            var client = new RestClient { BaseUrl = new Uri(siteUrl) };
+            var request = new RestRequest(Method.POST);
+            request.AddHeader("Content-Type", "application/json");
+            request.Resource = "rest/V1/integration/admin/token";
+            request.AddJsonBody(new { username = userName, password = password });
+            var response = client.Execute(request);
+            return response.Content;
         }
         #endregion
 
@@ -180,18 +163,14 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                var client = new MagentoApi()
-                    .Initialize(connection.SiteUrl, connection.ConsumerKey, connection.ConsumerSecret)
-                    .AuthenticateAdmin(connection.MagentoUserName, connection.MagentoUserPassword);
-
-                var filter = GetFilterObject(request.Filters);
-                var magentoResponse = await client.GetCustomers(filter);
-
-                if (!magentoResponse.HasErrors)
-                {
-                    response.Data = JsonConvert.SerializeObject(magentoResponse.Result);
-                }
-
+                var token = GetBearerToken(connection.SiteUrl, connection.MagentoUserName, connection.MagentoUserPassword).Trim('"');
+                var client = new RestClient { BaseUrl = new Uri(connection.SiteUrl) };
+                var magentoRequest = new RestRequest(Method.GET);
+                magentoRequest.AddHeader("Content-Type", "application/json");
+                magentoRequest.AddHeader("Authorization", "Bearer " + token);
+                magentoRequest.Resource = "rest/V1/customers/search?" + GetFilterString(request.Filters);
+                var magentoResponse = client.Execute<Models.Customers>(magentoRequest);
+                response.Data = JsonConvert.SerializeObject(magentoResponse.Data.Items);
             }
             catch (Exception ex)
             {
@@ -201,7 +180,6 @@ namespace bezlio.rdb.plugins
 
             return response;
         }
-
         public static async Task<RemoteDataBrokerResponse> GetProducts(RemoteDataBrokerRequest rdbRequest)
         {
             MagentoDataModel request = JsonConvert.DeserializeObject<MagentoDataModel>(rdbRequest.Data);
@@ -211,18 +189,14 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                var client = new MagentoApi()
-                    .Initialize(connection.SiteUrl, connection.ConsumerKey, connection.ConsumerSecret)
-                    .AuthenticateAdmin(connection.MagentoUserName, connection.MagentoUserPassword);
-
-                var filter = GetFilterObject(request.Filters);
-                var magentoResponse = await client.GetProducts(filter);
-
-                if (!magentoResponse.HasErrors)
-                {
-                    response.Data = JsonConvert.SerializeObject(magentoResponse.Result, typeof(Models.Products),new JsonSerializerSettings());
-                }
-
+                var token = GetBearerToken(connection.SiteUrl, connection.MagentoUserName, connection.MagentoUserPassword).Trim('"');
+                var client = new RestClient { BaseUrl = new Uri(connection.SiteUrl) };
+                var magentoRequest = new RestRequest(Method.GET);
+                magentoRequest.AddHeader("Content-Type", "application/json");
+                magentoRequest.AddHeader("Authorization", "Bearer " + token);
+                magentoRequest.Resource = "rest/V1/products?" + GetFilterString(request.Filters);
+                var magentoResponse = client.Execute<Models.Products>(magentoRequest);
+                response.Data = JsonConvert.SerializeObject(magentoResponse.Data.Items);
             }
             catch (Exception ex)
             {
@@ -232,7 +206,6 @@ namespace bezlio.rdb.plugins
 
             return response;
         }
-
         public static async Task<RemoteDataBrokerResponse> GetOrders(RemoteDataBrokerRequest rdbRequest)
         {
             MagentoDataModel request = JsonConvert.DeserializeObject<MagentoDataModel>(rdbRequest.Data);
@@ -242,18 +215,14 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                var client = new MagentoApi()
-                    .Initialize(connection.SiteUrl, connection.ConsumerKey, connection.ConsumerSecret)
-                    .AuthenticateAdmin(connection.MagentoUserName, connection.MagentoUserPassword);
-
-                var filter = GetFilterObject(request.Filters);
-                var magentoResponse = await client.GetOrders(filter);
-
-                if (!magentoResponse.HasErrors)
-                {
-                    response.Data = JsonConvert.SerializeObject(magentoResponse.Result);
-                }
-
+                var token = GetBearerToken(connection.SiteUrl, connection.MagentoUserName, connection.MagentoUserPassword).Trim('"');
+                var client = new RestClient { BaseUrl = new Uri(connection.SiteUrl) };
+                var magentoRequest = new RestRequest(Method.GET);
+                magentoRequest.AddHeader("Content-Type", "application/json");
+                magentoRequest.AddHeader("Authorization", "Bearer " + token);
+                magentoRequest.Resource = "rest/V1/orders?" + GetFilterString(request.Filters);
+                var magentoResponse = client.Execute<Models.Orders>(magentoRequest);
+                response.Data = JsonConvert.SerializeObject(magentoResponse.Data.Items);
             }
             catch (Exception ex)
             {
@@ -264,7 +233,5 @@ namespace bezlio.rdb.plugins
             return response;
         }
         #endregion
-
     }
-
 }
