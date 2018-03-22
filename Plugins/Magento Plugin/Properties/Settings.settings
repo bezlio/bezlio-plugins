@@ -1,0 +1,20 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="bezlio.rdb.plugins.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="connections" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">
+                  [
+                  {
+                  'connectionName': 'Your Magento Site Name',
+                  'siteUrl': 'http://demo20180315b.store.magecloud.net',
+                  'consumerKey': '47aaefd47451a37d5815de825c3b1661',
+                  'consumerSecret': 'c3cd7a0eee6df11cc6874aa5489a9335',
+                  'magentoUserName': 'admin',
+                  'magentoUserPassword': '33oOekhhBZoWKU4ndEWp'
+                  }
+                  ]
+                </Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
