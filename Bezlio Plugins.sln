@@ -43,8 +43,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DynamicsCRM", "Plugins\Dyna
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TensorFlow Plugin", "TensorFlow Plugin\TensorFlow Plugin.csproj", "{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSystemDynamic Plugin", "FileSystemDynamic\FileSystemDynamic Plugin.csproj", "{2369C1AF-2C3E-472C-A79C-B923F111A589}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -212,14 +210,6 @@ Global
 		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Release|x86.ActiveCfg = Release|Any CPU
 		{5C2B2A5F-A293-4F4C-ABCC-46B2FBE6E848}.Release|x86.Build.0 = Release|Any CPU
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Debug|x86.ActiveCfg = Debug|x86
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Debug|x86.Build.0 = Debug|x86
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Release|x86.ActiveCfg = Release|Any CPU
-		{2369C1AF-2C3E-472C-A79C-B923F111A589}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
