@@ -2,248 +2,44 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.IO;
+using System.Data.SqlClient;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using System.Reflection;
+using System.IO;
 
 namespace bezlio.rdb.plugins
 {
-    public class FileSystemDataModel
+    public class SQLServerDataModel
     {
         public string Context { get; set; }
-        public string FileName { get; set; }
-        public string ListFilter { get; set; }
-        public byte[] Bytes { get; set; }
+        public string Connection { get; set; }
+        public string QueryName { get; set; }
+        public List<KeyValuePair<string, string>> Parameters { get; set; }
+
+        public SQLServerDataModel()
+        {
+            Parameters = new List<KeyValuePair<string, string>>();
+        }
     }
-    public class FileSystem
+
+    public class SQLServerFunctions
     {
         public static object GetArgs()
         {
-            FileSystemDataModel model = new FileSystemDataModel();
-            model.Context = GetFolderNames();
+
+            SQLServerDataModel model = new SQLServerDataModel();
+            List<SqlFileLocation> contextLocations = GetLocations();
+
+            model.Context = GetFolderNames(contextLocations);
+            model.Connection = GetConnectionNames();
+            model.QueryName = GetQueriesCascadeDefinition(contextLocations, nameof(model.Context));
+            model.Parameters = new List<KeyValuePair<string, string>>();
+            model.Parameters.Add(new KeyValuePair<string, string>("CustomerId", "102"));         
 
             return model;
         }
-
-        public static List<FileLocation> GetLocations()
-        {
-            string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string cfgPath = asmPath + @"\" + "FileSystem.dll.config";
-            string strLocations = "";
-            if (File.Exists(cfgPath))
-            {
-                // Load in the cfg file
-                XDocument xConfig = XDocument.Load(cfgPath);
-
-                // Get the setting for the debug log destination
-                XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "fileSystemLocations").FirstOrDefault();
-                if (xLocations != null)
-                {
-                    strLocations = xLocations.Value;
-                }
-            }
-            return JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
-        }
-
-        public static string GetFolderNames()
-        {
-            var result = "[";
-            foreach (var location in GetLocations())
-            {
-                result += location.LocationName + ",";
-            }
-            result.TrimEnd(',');
-            result += "]";
-            return result;
-        }
-
-        public static async Task<RemoteDataBrokerResponse> GetFile(RemoteDataBrokerRequest rdbRequest)
-        {
-            FileSystemDataModel request = JsonConvert.DeserializeObject<FileSystemDataModel>(rdbRequest.Data);
-
-            // Declare the response object
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = rdbRequest.Compress;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
-
-            try
-            {
-                // Settings do not seem to reflect in cleanly, we will read the settings directly
-                string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string cfgPath = asmPath + @"\" + "FileSystem.dll.config";
-                string strLocations = "";
-
-                if (File.Exists(cfgPath))
-                {
-                    // Load in the cfg file
-                    XDocument xConfig = XDocument.Load(cfgPath);
-
-                    // Get the setting for the debug log destination
-                    XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "fileSystemLocations").FirstOrDefault();
-                    if (xLocations != null)
-                    {
-                        strLocations = xLocations.Value;
-                    }
-                }
-
-                // Deserialize the values from Settings
-                List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
-
-                // Now pick the location path by the name specified
-                if (locations.Where((l) => l.LocationName.Equals(request.Context)).Count() == 0)
-                {
-                    response.Error = true;
-                    response.ErrorText = "Could not locate a location in the plugin config file with the name " + request.Context;
-                    return response;
-                }
-                string locationPath = locations.Where((l) => l.LocationName.Equals(request.Context)).FirstOrDefault().LocationPath;
-                
-                // Return the data table
-                response.Data = JsonConvert.SerializeObject(File.ReadAllBytes(locationPath + request.FileName));
-
-                //WriteDebugLog("Response created");
-            }
-            catch (Exception ex)
-            {
-                response.Error = true;
-                response.ErrorText = Environment.MachineName + ": " + ex.Message;
-            }
-
-            // Return our response
-            return response;
-        }
-
-        public static async Task<RemoteDataBrokerResponse> WriteFile(RemoteDataBrokerRequest rdbRequest)
-        {
-            FileSystemDataModel request = JsonConvert.DeserializeObject<FileSystemDataModel>(rdbRequest.Data);
-
-            // Declare the response object
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = rdbRequest.Compress;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
-
-            try {
-                // Settings do not seem to reflect in cleanly, we will read the settings directly
-                string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string cfgPath = asmPath + @"\" + "FileSystem.dll.config";
-                string strLocations = "";
-
-                if (File.Exists(cfgPath)) {
-                    // Load in the cfg file
-                    XDocument xConfig = XDocument.Load(cfgPath);
-
-                    // Get the setting for the debug log destination
-                    XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "fileSystemLocations").FirstOrDefault();
-                    if (xLocations != null) {
-                        strLocations = xLocations.Value;
-                    }
-                }
-
-                // Deserialize the values from Settings
-                List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
-
-                // Now pick the location path by the name specified
-                if (locations.Where((l) => l.LocationName.Equals(request.Context)).Count() == 0) {
-                    response.Error = true;
-                    response.ErrorText = "Could not locate a location in the plugin config file with the name " + request.Context;
-                    return response;
-                }
-                string locationPath = locations.Where((l) => l.LocationName.Equals(request.Context)).FirstOrDefault().LocationPath;
-
-                //sub-folder creation
-                if (request.FileName.Contains(@"\")) {
-                    string directory = request.FileName.Substring(0, request.FileName.LastIndexOf(@"\"));
-                    Directory.CreateDirectory(locationPath + @"\" + directory);
-                }
-
-                File.WriteAllBytes(locationPath + "/" + request.FileName, request.Bytes);
-                response.Data = JsonConvert.SerializeObject("success");
-            }
-            catch (Exception ex)
-            {
-                response.Error = true;
-                response.ErrorText = Environment.MachineName + ": " + ex.Message;
-            }
-
-            // Return our response
-            return response;
-        }
-
-        public static async Task<RemoteDataBrokerResponse> GetFileList(RemoteDataBrokerRequest rdbRequest)
-        {
-            FileSystemDataModel request = JsonConvert.DeserializeObject<FileSystemDataModel>(rdbRequest.Data);
-
-            // Declare the response object
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = rdbRequest.Compress;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
-
-            try
-            {
-                // Settings do not seem to reflect in cleanly, we will read the settings directly
-                string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string cfgPath = asmPath + @"\" + "FileSystem.dll.config";
-                string strLocations = "";
-
-                if (File.Exists(cfgPath))
-                {
-                    // Load in the cfg file
-                    XDocument xConfig = XDocument.Load(cfgPath);
-
-                    // Get the setting for the folder locations
-                    XElement xLocations = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "fileSystemLocations").FirstOrDefault();
-                    if (xLocations != null)
-                    {
-                        strLocations = xLocations.Value;
-                    }
-                }
-
-                // Deserialize the values from Settings
-                List<FileLocation> locations = JsonConvert.DeserializeObject<List<FileLocation>>(strLocations);
-                string locationPath = locations.Where((l) => l.LocationName.Equals(request.Context)).FirstOrDefault().LocationPath;
-
-                // Return the data table
-                List<dynamic> result = new List<dynamic>();
-                foreach (var f in Directory.GetFiles(locationPath, request.ListFilter, SearchOption.AllDirectories))
-                {
-                    FileInfo fi = new FileInfo(f);
-                    result.Add(new
-                    {
-                        Attributes = fi.Attributes,
-                        CreationTime = fi.CreationTime,
-                        CreationTimeUtc = fi.CreationTimeUtc,
-                        Directory = fi.Directory,
-                        DirectoryName = fi.DirectoryName,
-                        Exists = fi.Exists,
-                        Extension = fi.Extension,
-                        FullName = fi.FullName,
-                        IsReadOnly = fi.IsReadOnly,
-                        LastAccessTime = fi.LastAccessTime,
-                        LastAccessTimeUtc = fi.LastAccessTimeUtc,
-                        LastWriteTime = fi.LastWriteTime,
-                        LastWriteTimeUtc = fi.LastWriteTimeUtc,
-                        Length = fi.Length,
-                        Name = fi.Name,
-                        BaseName = Path.GetFileNameWithoutExtension(f)
-                    });
-                }
-                response.Data = JsonConvert.SerializeObject(result);
-            }
-            catch (Exception ex)
-            {
-                response.Error = true;
-                response.ErrorText = Environment.MachineName + ": " + ex.Message;
-            }
-
-            // Return our response
-            return response;
-        }
-
 
         public static List<SqlFileLocation> GetLocations()
         {
@@ -324,10 +120,10 @@ namespace bezlio.rdb.plugins
                 {
                     result += fileName + ",";
                 }
-                result.TrimEnd(new char[] { ',' });
+                result.TrimEnd(new char[]{','});
                 result += "],";
             }
-            result.TrimEnd(new char[] { ',' });
+            result.TrimEnd(new char[]{','});
             result += "]";
             return result;
         }
@@ -388,8 +184,7 @@ namespace bezlio.rdb.plugins
                 SqlConnectionInfo connection = connections.Where((c) => c.ConnectionName.Equals(request.Connection)).FirstOrDefault();
 
                 // Perform any replacements on passed variables
-                if (request.Parameters != null && request.Parameters.Count > 0)
-                {
+                if (request.Parameters != null && request.Parameters.Count > 0) {
                     FillQueryParameters(ref sql, request.Parameters);
                 }
 
@@ -420,7 +215,7 @@ namespace bezlio.rdb.plugins
             }
 
             // Return our response
-            return response;
+            return response;        
         }
         public static async Task<RemoteDataBrokerResponse> ExecuteNonQuery(RemoteDataBrokerRequest rdbRequest)
         {
@@ -462,11 +257,10 @@ namespace bezlio.rdb.plugins
                 //WriteDebugLog("Connection Created");
 
                 // Perform any replacements on passed variables
-                if (request.Parameters != null && request.Parameters.Count > 0)
-                {
+                if (request.Parameters != null && request.Parameters.Count > 0) {
                     FillQueryParameters(ref sql, request.Parameters);
                 }
-
+                
                 // Now obtain a SQL connection
                 object sqlConn = getConnection("SQL Server"
                             , connection.ServerAddress
@@ -684,7 +478,7 @@ namespace bezlio.rdb.plugins
             return oAdapter;
         }
 
-#pragma warning disable 1998
+        #pragma warning disable 1998
         private async static Task<DataTable> executeQuery(object _connection,
                                     string _sql, List<KeyValuePair<string, string>> spParams)
         {
@@ -699,8 +493,7 @@ namespace bezlio.rdb.plugins
                     oCommand = getCommand("SQL Server");
                     SqlCommand command = (SqlCommand)oCommand;
 
-                    using (command.Connection = (SqlConnection)_connection)
-                    {
+                    using (command.Connection = (SqlConnection)_connection) {
                         if (spParams != null && spParams.Count > 0)
                         {
                             command.CommandType = CommandType.StoredProcedure;
@@ -708,7 +501,7 @@ namespace bezlio.rdb.plugins
                         }
 
                         command.CommandText = _sql;
-                        oAdapter = getAdapter("SQL Server", oCommand);
+                        oAdapter = getAdapter("SQL Server", oCommand);                  
                         ((SqlDataAdapter)oAdapter).Fill(dt);
                         //((SqlCommand)oCommand).Connection.Close();
                     }
@@ -773,12 +566,11 @@ namespace bezlio.rdb.plugins
                 {
                     param = new SqlParameter(parameter.Key, number);
                     param.DbType = DbType.Double;
-                }
-                else
+                } else
                 {
                     param = new SqlParameter(parameter.Key, value);
                     param.DbType = DbType.String;
-                }
+                }            
 
                 param.Direction = ParameterDirection.Input;
                 command.Parameters.Add(param);
@@ -800,5 +592,4 @@ namespace bezlio.rdb.plugins
             return result;
         }
     }
-}
 }

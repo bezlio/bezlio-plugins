@@ -72,25 +72,24 @@
   <ItemGroup>
     <Compile Include="DataDocWriter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Settings.cs" />
+    <Compile Include="SqlConnections.cs" />
+    <Compile Include="SqlFileLocations.cs" />
+    <Compile Include="SQLServerFunctions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Bezlio Plugin Common\Bezlio Plugin Common.csproj">
       <Project>{89966888-91FD-40F9-824C-F8B87B0207FD}</Project>
       <Name>Bezlio Plugin Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Plugins\FileSystem\FileSystem Plugin.csproj">
-      <Project>{5a668cbb-56d3-4797-9fe1-6f168078399b}</Project>
-      <Name>FileSystem Plugin</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Plugins\SQLServer\SQLServer Plugin.csproj">
-      <Project>{9DD31899-AA64-42BD-B5FF-822B3F836640}</Project>
-      <Name>SQLServer Plugin</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
