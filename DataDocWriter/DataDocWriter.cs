@@ -115,7 +115,7 @@ namespace bezlio.rdb.plugins
             var deserializedTable = new DataTable();
             var populateJSON = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
             var populateData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(populateJSON.PopulateDataJSON);
-            foreach (var item in populateData.First().Value)
+            foreach (var item in populateData.SelectMany(i => i.Value))
             {
                 if (!deserializedTable.Columns.Contains(item.Key))
                 {
