@@ -63,8 +63,9 @@ namespace bezlio.rdb.plugins
 
                 var fileResponse = await getFile(rdbRequest);
                 var fileContentStream = new MemoryStream();
-                var fileContents = Convert.FromBase64String(JsonConvert.DeserializeObject<string>(fileResponse.Data));
-                fileContentStream.Write(fileContents, 0, fileContents.Length);
+                //var fileContents = JsonConvert.DeserializeObject<byte[]>(fileResponse.Data);
+                byte[] array = Encoding.ASCII.GetBytes(fileResponse.Data);
+                fileContentStream.Write(array, 0, fileResponse.Data.Length);
                 using (var memoryStream = new MemoryStream())
                 {
                     using (var doc = WordprocessingDocument.Open(fileContentStream, true))
@@ -147,7 +148,7 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                response.Data = JsonConvert.SerializeObject(File.ReadAllBytes(request.FileName));
+                response.Data = Encoding.ASCII.GetString(File.ReadAllBytes(request.FileName));
             }
             catch (Exception ex)
             {
