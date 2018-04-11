@@ -71,7 +71,6 @@ namespace bezlio.rdb.plugins
 
                         if (!string.IsNullOrWhiteSpace(args.PopulateDataJSON))
                         {
-                            //populateData = JsonConvert.DeserializeObject<DataTable>(JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data).PopulateDataJSON);
                             populateData = await deserializeJSONData(rdbRequest);
                         }
                         else
@@ -102,16 +101,13 @@ namespace bezlio.rdb.plugins
             }
             catch (Exception e)
             {
-                var x = e;
+                return new RemoteDataBrokerResponse() { Error = true, ErrorText = e.Message };
             }
             return new RemoteDataBrokerResponse();
         }
 
         private static async Task<DataTable> deserializeJSONData(RemoteDataBrokerRequest rdbRequest)
         {
-            var x = new Dictionary<string, object>();
-            x.Add("test", "col");
-
             var deserializedTable = new DataTable();
             var populateJSON = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
             var populateData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(populateJSON.PopulateDataJSON);
@@ -122,15 +118,13 @@ namespace bezlio.rdb.plugins
                     deserializedTable.Columns.Add(item.Key, item.Value.GetType());
                 }
             }
-            foreach (var row in populateData)
+
+            var populateDataRow = deserializedTable.NewRow();
+            foreach (var item in populateData.SelectMany(i => i.Value))
             {
-                var populateDataRow = deserializedTable.NewRow();
-                foreach (var item in row.Value)
-                {
-                    populateDataRow[item.Key] = item.Value;
-                }
-                deserializedTable.Rows.Add(populateDataRow);
+                populateDataRow[item.Key] = item.Value;
             }
+            deserializedTable.Rows.Add(populateDataRow);
             return deserializedTable;
         }
 
@@ -146,14 +140,7 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                //if (Directory.GetAccessControl(request.FileName.Split('\\').Take(request.FileName.Count(c => c == '\\') - 1).Aggregate((a, b) => a + b)) == null)
-                //throw new UnauthorizedAccessException("User does not have access to directory at location. Please use full and exact paths and file names. \n" + request.FileName);
-                //if (!File.Exists(request.FileName))
-                //throw new FileNotFoundException("File at location not found. Please use full and exact paths and file names. \n" + request.FileName);
-                // Return the data table
                 response.Data = JsonConvert.SerializeObject(File.ReadAllBytes(request.FileName));
-
-                //WriteDebugLog("Response created");
             }
             catch (Exception ex)
             {
