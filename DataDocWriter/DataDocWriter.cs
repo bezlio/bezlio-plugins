@@ -68,8 +68,9 @@ namespace bezlio.rdb.plugins
                 fileContentStream.Write(array, 0, fileResponse.Data.Length);
                 using (var memoryStream = new MemoryStream())
                 {
-                    using (var doc = WordprocessingDocument.Open(fileContentStream, true))
+                    using (var doc = WordprocessingDocument.Open(args.FileName, true))
                     {
+                        doc.ChangeDocumentType(WordprocessingDocumentType.MacroEnabledDocument);
                         using (var reader = new StreamReader(doc.MainDocumentPart.GetStream()))
                         {
                             text = reader.ReadToEnd();
@@ -92,7 +93,7 @@ namespace bezlio.rdb.plugins
                             doc.MainDocumentPart.Document.Save();
                             doc.Save();
                         }
-
+                        doc.Close();
                         
                         using (var stream = new MemoryStream())
                         {
