@@ -50,6 +50,11 @@ namespace bezlio.rdb.plugins
 
         public static async Task<RemoteDataBrokerResponse> GetOutputFile(RemoteDataBrokerRequest rdbRequest)
         {
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
             try
             {
                 var args = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
@@ -87,23 +92,25 @@ namespace bezlio.rdb.plugins
                             doc.Save();
                         }
 
-                        RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-                        response.Compress = rdbRequest.Compress;
-                        response.RequestId = rdbRequest.RequestId;
-                        response.DataType = "applicationJSON";
+                        
                         using (var stream = new MemoryStream())
                         {
                             response.Data = JsonConvert.SerializeObject(fileContentStream.ToArray());
                         }
-                        return response;
+                        
                     }
                 }
             }
             catch (Exception e)
             {
-                return new RemoteDataBrokerResponse() { Error = true, ErrorText = e.Message };
+                //if (!string.IsNullOrEmpty(e.InnerException.ToString())) {
+                //    response.ErrorText += e.InnerException.ToString();
+                //}
+                response.Error = true;
+                response.ErrorText += e.Message;
             }
-            return new RemoteDataBrokerResponse();
+
+            return response;
         }
 
         private static async Task<DataTable> deserializeJSONData(RemoteDataBrokerRequest rdbRequest)
