@@ -16,10 +16,7 @@ namespace bezlio.rdb.plugins
     public class DataDocWriterDataModel
     {
         public string OutputFileName { get; set; }
-        public string Context { get; set; }
-        public string FileName { get; set; }
-        public string Connection { get; set; }
-        public string QueryName { get; set; }
+        public string InputFileName { get; set; }
         public string SearchFormatPrefix { get; set; }
         public string SearchFormatSuffix { get; set; }
         public string PopulateDataJSON { get; set; }
@@ -41,8 +38,6 @@ namespace bezlio.rdb.plugins
             DataDocWriterDataModel model = new DataDocWriterDataModel();
             List<SqlFileLocation> contextLocations = SQLServerFunctions.GetLocations();
 
-            model.Connection = SQLServerFunctions.GetConnectionNames();
-            model.QueryName = SQLServerFunctions.GetQueriesCascadeDefinition(contextLocations, nameof(model.Context));
             model.Parameters = new List<KeyValuePair<string, string>>();
 
             return model;
@@ -68,7 +63,7 @@ namespace bezlio.rdb.plugins
                 fileContentStream.Write(array, 0, fileResponse.Data.Length);
                 using (var memoryStream = new MemoryStream())
                 {
-                    using (var doc = WordprocessingDocument.Open(args.FileName, true))
+                    using (var doc = WordprocessingDocument.Open(args.InputFileName, true))
                     {
                         doc.ChangeDocumentType(WordprocessingDocumentType.MacroEnabledDocument);
                         using (var reader = new StreamReader(doc.MainDocumentPart.GetStream()))
@@ -76,7 +71,7 @@ namespace bezlio.rdb.plugins
                             text = reader.ReadToEnd();
                         }
 
-                        if (!string.IsNullOrWhiteSpace(args.PopulateDataJSON))
+                        if (args.PopulateDataJSON != null)
                         {
                             populateData = await deserializeJSONData(rdbRequest);
                         }
@@ -119,7 +114,7 @@ namespace bezlio.rdb.plugins
         {
             var deserializedTable = new DataTable();
             var populateJSON = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
-            var populateData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(populateJSON.PopulateDataJSON);
+            var populateData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(populateJSON.PopulateDataJSON.ToString());
             foreach (var item in populateData.SelectMany(i => i.Value))
             {
                 if (!deserializedTable.Columns.Contains(item.Key))
@@ -149,7 +144,7 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                response.Data = Encoding.ASCII.GetString(File.ReadAllBytes(request.FileName));
+                response.Data = Encoding.ASCII.GetString(File.ReadAllBytes(request.InputFileName));
             }
             catch (Exception ex)
             {
