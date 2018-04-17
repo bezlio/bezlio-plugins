@@ -10,6 +10,8 @@ using System.Xml.Linq;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml;
 using bezlio.rdb.plugins;
+using DocumentFormat.OpenXml.Drawing;
+using System.IO.Packaging;
 
 namespace bezlio.rdb.plugins
 {
@@ -20,11 +22,9 @@ namespace bezlio.rdb.plugins
         public string SearchFormatPrefix { get; set; }
         public string SearchFormatSuffix { get; set; }
         public string PopulateDataJSON { get; set; }
-        public List<KeyValuePair<string, string>> Parameters { get; set; }
 
         public DataDocWriterDataModel()
         {
-            Parameters = new List<KeyValuePair<string, string>>();
             SearchFormatPrefix = @"==";
             SearchFormatSuffix = @"==";
         }
@@ -38,9 +38,12 @@ namespace bezlio.rdb.plugins
             DataDocWriterDataModel model = new DataDocWriterDataModel();
             List<SqlFileLocation> contextLocations = SQLServerFunctions.GetLocations();
 
-            model.Parameters = new List<KeyValuePair<string, string>>();
 
             return model;
+        }
+        // To search and replace content in a document part.
+        public static void SearchAndReplace(string document, Dictionary<string, string> dict)
+        {
         }
 
         public static async Task<RemoteDataBrokerResponse> GetOutputFile(RemoteDataBrokerRequest rdbRequest)
@@ -53,49 +56,50 @@ namespace bezlio.rdb.plugins
             try
             {
                 var args = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
-                var text = "";
-                DataTable populateData;
 
-                var fileResponse = await getFile(rdbRequest);
-                var fileContentStream = new MemoryStream();
-                //var fileContents = JsonConvert.DeserializeObject<byte[]>(fileResponse.Data);
-                byte[] array = Encoding.ASCII.GetBytes(fileResponse.Data);
-                fileContentStream.Write(array, 0, fileResponse.Data.Length);
-                using (var memoryStream = new MemoryStream())
+                var docText = "";
+                using (var templateDoc = WordprocessingDocument.Open(args.InputFileName, false))
+                using (var outputDoc = WordprocessingDocument.Create("C:\\" + args.OutputFileName, WordprocessingDocumentType.Document))
                 {
-                    using (var doc = WordprocessingDocument.Open(args.InputFileName, true))
+                    foreach (var part in templateDoc.Parts)
+                        if (part.GetType() != typeof(MainDocumentPart))
+                            outputDoc.AddPart(part.OpenXmlPart, part.RelationshipId);
+                    using (StreamReader sr = new StreamReader(templateDoc.MainDocumentPart.GetStream(FileMode.Open)))
                     {
-                        doc.ChangeDocumentType(WordprocessingDocumentType.MacroEnabledDocument);
-                        using (var reader = new StreamReader(doc.MainDocumentPart.GetStream()))
-                        {
-                            text = reader.ReadToEnd();
-                        }
-
-                        if (args.PopulateDataJSON != null)
-                        {
-                            populateData = await deserializeJSONData(rdbRequest);
-                        }
-                        else
-                        {
-                            populateData = JsonConvert.DeserializeObject<DataTable>((await SQLServerFunctions.ExecuteQuery(rdbRequest)).Data);
-                        }
-                        var row = populateData.Rows[0];
-
-                        foreach (DataColumn column in row.Table.Columns)
-                        {
-                            var value = row[column].ToString();
-                            doc.MainDocumentPart.Document.InnerXml = doc.MainDocumentPart.Document.InnerXml.Replace(args.SearchFormatPrefix + column.ColumnName + args.SearchFormatSuffix, value);
-                            doc.MainDocumentPart.Document.Save();
-                            doc.Save();
-                        }
-                        doc.Close();
-                        
-                        using (var stream = new MemoryStream())
-                        {
-                            response.Data = JsonConvert.SerializeObject(fileContentStream.ToArray());
-                        }
-                        
+                        docText = sr.ReadToEnd();
                     }
+                    foreach (KeyValuePair<string, string> item in deserializeJSONData(rdbRequest))
+                    {
+                        docText = docText.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value);
+                        //var elements = templateDoc.MainDocumentPart.Document.Elements<DocumentFormat.OpenXml.Wordprocessing.Text>().ToArray();
+                        //var newElements = new List<DocumentFormat.OpenXml.Wordprocessing.Text>();
+                        //for (var i = 0; i < elements.Count(); i++)
+                        //{
+                        //    if (elements[i].Text != "==" && elements[i])
+                        //    {
+
+                        //    }
+                        //    else
+                        //    {
+
+                        //    }
+                        //}
+                    }
+
+                    using (StreamWriter sw = new StreamWriter(outputDoc.MainDocumentPart.GetStream(FileMode.Create)))
+                    {
+                        sw.Write(docText);
+                    }
+                    outputDoc.MainDocumentPart.Document.Save();
+                    outputDoc.Save();
+                    outputDoc.Close();
+                    templateDoc.Close();
+                }
+                var fs = File.Open("C:\\" + args.OutputFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using (var mem = new MemoryStream())
+                {
+                    fs.CopyTo(mem);
+                    response.Data = Convert.ToBase64String(mem.ToArray());
                 }
             }
             catch (Exception e)
@@ -110,26 +114,13 @@ namespace bezlio.rdb.plugins
             return response;
         }
 
-        private static async Task<DataTable> deserializeJSONData(RemoteDataBrokerRequest rdbRequest)
+        private static Dictionary<string, string> deserializeJSONData(RemoteDataBrokerRequest rdbRequest)
         {
-            var deserializedTable = new DataTable();
+            var deserializedTable = new Dictionary<string, string>();
             var populateJSON = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
             var populateData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(populateJSON.PopulateDataJSON.ToString());
-            foreach (var item in populateData.SelectMany(i => i.Value))
-            {
-                if (!deserializedTable.Columns.Contains(item.Key))
-                {
-                    deserializedTable.Columns.Add(item.Key, item.Value.GetType());
-                }
-            }
 
-            var populateDataRow = deserializedTable.NewRow();
-            foreach (var item in populateData.SelectMany(i => i.Value))
-            {
-                populateDataRow[item.Key] = item.Value;
-            }
-            deserializedTable.Rows.Add(populateDataRow);
-            return deserializedTable;
+            return populateData.SelectMany(i => i.Value).Select(item => new KeyValuePair<string, string>(item.Key, item.Value.ToString())).ToDictionary(key => key.Key, val => val.Value);
         }
 
         private static async Task<RemoteDataBrokerResponse> getFile(RemoteDataBrokerRequest rdbRequest)
