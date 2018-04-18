@@ -79,6 +79,7 @@ namespace bezlio.rdb.plugins
             output.Add(dataValues);
 
             /* Write to output file */
+            // TODO: Maybe make a file prefix and extension configurable
             File.WriteAllLines(GetUniqueDropFileName(dropFolder, ".vem"), output.ToArray());
         }
 
@@ -103,6 +104,7 @@ namespace bezlio.rdb.plugins
             output.Add("*PRINTLABEL");
 
             /* Write to output file */
+            // TODO: Maybe make a file prefix and extension configurable
             File.WriteAllLines(GetUniqueDropFileName(dropFolder, ".pas"), output.ToArray());
         }
 
@@ -119,7 +121,7 @@ namespace bezlio.rdb.plugins
 
         public LabelPrinting()
         {
-            //throw new InvalidOperationException("Test");
+            LoadConfig();
         }
 
         public static object GetArgs()
@@ -134,12 +136,13 @@ namespace bezlio.rdb.plugins
             return model;
         }
 
-        public static LabelPrintingConfig LoadConfig()
+        public void LoadConfig()
         {
             string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string cfgPath = asmPath + @"\" + "LabelPrinting.dll.config";
-            LabelPrintingConfig config = new LabelPrintingConfig();
             var listOfValidEngines = new List<string> {"BARTENDER", "LOFTWARE"};
+
+            config = new LabelPrintingConfig();
 
             if (File.Exists(cfgPath))
             {
@@ -154,6 +157,10 @@ namespace bezlio.rdb.plugins
                         config.LabeLEngine = xLabelEngine.Value.ToUpper();
                     }
                 }
+                if (config.LabeLEngine == null)
+                {
+                    throw new InvalidOperationException("LabelPring Plugin: Label engine not set correctly.");
+                }
 
                 // Get the setting for the drop folder
                 XElement xDropFolder = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "dropFolder").FirstOrDefault();
@@ -163,6 +170,10 @@ namespace bezlio.rdb.plugins
                     {
                         config.DropFolder = xDropFolder.Value;
                     }
+                }
+                if (config.DropFolder == null)
+                {
+                    throw new InvalidOperationException("LabelPring Plugin: Drop folder is not set or doesn't point to an existing directory.");
                 }
 
                 // Get the setting for the label template folder
@@ -174,18 +185,21 @@ namespace bezlio.rdb.plugins
                         config.TemplateFolder = xTemplateFolder.Value;
                     }
                 }
+                if (config.TemplateFolder == null)
+                {
+                    throw new InvalidOperationException("LabelPring Plugin: Template folder is not set or doesn't point to an existing directory.");
+                }
             }
-
-            return config;
+            else
+            {
+                throw new InvalidOperationException("LabelPrinting Plugin: Could not find config file.");
+            }
         }
 
 #pragma warning disable 1998
         public static async Task<RemoteDataBrokerResponse> PrintLabel(RemoteDataBrokerRequest rdbRequest)
         {
             LabelPrintingDataModel request = JsonConvert.DeserializeObject<LabelPrintingDataModel>(rdbRequest.Data);
-
-            // Get the configuration
-            LabelPrintingConfig config = LoadConfig();
 
             // Instantiate a PrintJob object
             PrintJob printJob = new PrintJob(request, config);
@@ -198,30 +212,6 @@ namespace bezlio.rdb.plugins
 
             try
             {
-                //// Make sure the label engine is set
-                //if (config.LabeLEngine == null)
-                //{
-                //    response.Error = true;
-                //    response.ErrorText = "Label Printing Plugin not configured correctly on BRDB server. Label engine not set correctly.";
-                //    return response;
-                //}
-
-                //// Make sure there is a proper drop folder
-                //if (config.DropFolder == null)
-                //{
-                //    response.Error = true;
-                //    response.ErrorText = "Label Printing Plugin not configured correctly on BRDB server. Drop folder is not set or doesn't point to an existing directory.";
-                //    return response;
-                //}
-
-                //// Make sure there is a proper template folder
-                //if (config.TemplateFolder == null)
-                //{
-                //    response.Error = true;
-                //    response.ErrorText = "Label Printing Plugin not configured correctly on BRDB server. Template folder is not set or doesn't point to an existing directory.";
-                //    return response;
-                //}
-
                 // Load the data passed in via JSON as an object we can iterate
                 var dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(request.Data.ToString());
 
@@ -233,19 +223,21 @@ namespace bezlio.rdb.plugins
                     return response;
                 }
 
+                string labelFormatAbsolutePath = Path.Combine(config.TemplateFolder, request.LabelFormat);
+
+                // Make sure the label format file exists
+                if (!File.Exists(labelFormatAbsolutePath))
+                {
+                    response.Error = true;
+                    response.ErrorText = $"Label format file '{labelFormatAbsolutePath}' cannot be found.";
+                    return response;
+                }
+
                 // TODO: Check that a printer was passed
                 string printer = request.PrinterName;
 
                 // TODO: Check that a valid quantity was passed
                 uint quantity = request.Quantity;
-
-                string labelFormatAbsolutePath = Path.Combine(config.TemplateFolder, request.LabelFormat);
-
-                // TODO: Make sure the label format file exists
-                if (File.Exists(labelFormatAbsolutePath))
-                {
-
-                }
 
                 if (config.LabeLEngine == "BARTENDER")
                 {
