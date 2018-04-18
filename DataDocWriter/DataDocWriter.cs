@@ -62,34 +62,46 @@ namespace bezlio.rdb.plugins
                 using (var outputDoc = WordprocessingDocument.Create("C:\\" + args.OutputFileName, WordprocessingDocumentType.Document))
                 {
                     foreach (var part in templateDoc.Parts)
-                        if (part.GetType() != typeof(MainDocumentPart))
-                            outputDoc.AddPart(part.OpenXmlPart, part.RelationshipId);
-                    using (StreamReader sr = new StreamReader(templateDoc.MainDocumentPart.GetStream(FileMode.Open)))
-                    {
-                        docText = sr.ReadToEnd();
-                    }
+                        outputDoc.AddPart(part.OpenXmlPart, part.RelationshipId);
+
                     foreach (KeyValuePair<string, string> item in deserializeJSONData(rdbRequest))
                     {
-                        docText = docText.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value);
-                        //var elements = templateDoc.MainDocumentPart.Document.Elements<DocumentFormat.OpenXml.Wordprocessing.Text>().ToArray();
-                        //var newElements = new List<DocumentFormat.OpenXml.Wordprocessing.Text>();
-                        //for (var i = 0; i < elements.Count(); i++)
-                        //{
-                        //    if (elements[i].Text != "==" && elements[i])
-                        //    {
+                        var children = templateDoc.MainDocumentPart.Document.Body.Descendants<Text>().ToArray();
+                        for (var i = 0; i < children.Count(); i++)
+                        {
+                            var child = children[i];
+                            if (child.Text == item.Key)
+                            {
+                                if (children.Count() - i >= 2 && i > 0 && children[i - 1].Text == args.SearchFormatPrefix && children[i + 1].InnerXml == args.SearchFormatSuffix)
+                                {
+                                    if (item.Value.Contains("<br/>"))
+                                    {
+                                        child.Text = "";
+                                        var splitValue = item.Value.Split(new string[] { "<br/>" }, StringSplitOptions.None);
+                                        for (var x = 0; x < splitValue.Length; x++)
+                                        {
+                                            child.Parent.Append(new Break());
+                                            child.Parent.Append(new Text(splitValue[x]));
+                                        }
+                                    }
+                                    if (!item.Value.Contains("<br/>"))
+                                        child.Text = item.Value;
 
-                        //    }
-                        //    else
-                        //    {
-
-                        //    }
-                        //}
+                                    children[i - 1].Text = "";
+                                    children[i + 1].Text = "";
+                                }
+                                else
+                                {
+                                    var x = 0;
+                                }
+                            }
+                        }
                     }
 
-                    using (StreamWriter sw = new StreamWriter(outputDoc.MainDocumentPart.GetStream(FileMode.Create)))
-                    {
-                        sw.Write(docText);
-                    }
+                    outputDoc.MainDocumentPart.Document.RemoveAllChildren();
+                    outputDoc.MainDocumentPart.Document.InnerXml = "";
+                    outputDoc.MainDocumentPart.Document.Append(templateDoc.MainDocumentPart.Document.ChildElements.Select(i => i.CloneNode(true)));
+
                     outputDoc.MainDocumentPart.Document.Save();
                     outputDoc.Save();
                     outputDoc.Close();
