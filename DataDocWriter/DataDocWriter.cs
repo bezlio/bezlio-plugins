@@ -126,8 +126,10 @@ namespace bezlio.rdb.plugins
                 email.Attachments.AddFileAttachment(@"C:\" + args.OutputFileName);
                 email.ToRecipients.Add(new EmailAddress(args.DestinationEmailAddress));
                 email.From = new EmailAddress(args.FromEmailAddressFriendly);
-                email.Body.Text = "Your Document is attached to this message.";
-                response.Data = "Your Document has been sent to the provided Email Address.";
+                email.Body = "Your Document is attached to this message.";
+                email.Send();
+
+                response.Data = JsonConvert.SerializeObject("Your Document has been sent to the provided Email Address.");
             }
             catch (Exception e)
             {

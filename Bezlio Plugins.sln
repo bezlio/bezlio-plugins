@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2024
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Epicor10 Plugin", "Plugins\Epicor10\Epicor10 Plugin.csproj", "{F571322C-133E-4937-8869-C617F5785A41}"
 EndProject
@@ -46,10 +46,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSystemDynamic Plugin", "FileSystemDynamic\FileSystemDynamic Plugin.csproj", "{2369C1AF-2C3E-472C-A79C-B923F111A589}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataDocWriter Plugin", "DataDocWriter\DataDocWriter Plugin.csproj", "{B2D75048-7A49-42FD-863E-712DC87DDF7C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApplication1", "New folder\ConsoleApplication1.csproj", "{5C29EF36-2738-4869-A145-A0270ED68CF1}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApplication2", "ConsoleApplication2\ConsoleApplication2.csproj", "{3A814E63-C29E-4D2A-AF5D-A133673C489D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -234,22 +230,6 @@ Global
 		{B2D75048-7A49-42FD-863E-712DC87DDF7C}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B2D75048-7A49-42FD-863E-712DC87DDF7C}.Release|x86.ActiveCfg = Release|Any CPU
 		{B2D75048-7A49-42FD-863E-712DC87DDF7C}.Release|x86.Build.0 = Release|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Debug|x86.Build.0 = Debug|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Release|x86.ActiveCfg = Release|Any CPU
-		{5C29EF36-2738-4869-A145-A0270ED68CF1}.Release|x86.Build.0 = Release|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Debug|x86.Build.0 = Debug|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Release|x86.ActiveCfg = Release|Any CPU
-		{3A814E63-C29E-4D2A-AF5D-A133673C489D}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
