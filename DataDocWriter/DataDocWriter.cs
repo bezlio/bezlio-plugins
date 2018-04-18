@@ -12,6 +12,7 @@ using DocumentFormat.OpenXml;
 using bezlio.rdb.plugins;
 using DocumentFormat.OpenXml.Drawing;
 using System.IO.Packaging;
+using Microsoft.Exchange.WebServices.Data;
 
 namespace bezlio.rdb.plugins
 {
@@ -22,6 +23,10 @@ namespace bezlio.rdb.plugins
         public string SearchFormatPrefix { get; set; }
         public string SearchFormatSuffix { get; set; }
         public string PopulateDataJSON { get; set; }
+        public string ExchangeUserName { get; set; }
+        public string ExchangePassword { get; set; }
+        public string FromEmailAddressFriendly { get; set; }
+        public string DestinationEmailAddress { get; set; }
 
         public DataDocWriterDataModel()
         {
@@ -41,10 +46,6 @@ namespace bezlio.rdb.plugins
 
             return model;
         }
-        // To search and replace content in a document part.
-        public static void SearchAndReplace(string document, Dictionary<string, string> dict)
-        {
-        }
 
         public static async Task<RemoteDataBrokerResponse> GetOutputFile(RemoteDataBrokerRequest rdbRequest)
         {
@@ -56,7 +57,7 @@ namespace bezlio.rdb.plugins
             try
             {
                 var args = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
-
+                
                 var docText = "";
                 using (var templateDoc = WordprocessingDocument.Open(args.InputFileName, false))
                 using (var outputDoc = WordprocessingDocument.Create("C:\\" + args.OutputFileName, WordprocessingDocumentType.Document))
@@ -111,8 +112,22 @@ namespace bezlio.rdb.plugins
                 using (var mem = new MemoryStream())
                 {
                     fs.CopyTo(mem);
-                    response.Data = Convert.ToBase64String(mem.ToArray());
                 }
+
+                ExchangeService exchange = new ExchangeService();
+                exchange.TraceEnabled = true;
+                exchange.TraceFlags = TraceFlags.All;
+
+                exchange.Credentials = new WebCredentials(args.ExchangeUserName, args.ExchangePassword);
+
+                exchange.Url = new System.Uri("https://outlook.office365.com/EWS/Exchange.asmx");
+
+                var email = new Microsoft.Exchange.WebServices.Data.EmailMessage(exchange);
+                email.Attachments.AddFileAttachment(@"C:\" + args.OutputFileName);
+                email.ToRecipients.Add(new EmailAddress(args.DestinationEmailAddress));
+                email.From = new EmailAddress(args.FromEmailAddressFriendly);
+                email.Body.Text = "Your Document is attached to this message.";
+                response.Data = "Your Document has been sent to the provided Email Address.";
             }
             catch (Exception e)
             {
