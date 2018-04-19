@@ -72,8 +72,21 @@ namespace bezlio.rdb.plugins
                         {
                             var child = children[i];
                             if (child.Text == args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix)
-                                child.Text = item.Value;
+                            {
 
+                                if (item.Value.Contains("<br/>"))
+                                {
+                                    child.Text = "";
+                                    var splitValue = item.Value.Split(new string[] { "<br/>" }, StringSplitOptions.None);
+                                    for (var x = 0; x < splitValue.Length; x++)
+                                    {
+                                        child.Parent.Append(new Break());
+                                        child.Parent.Append(new Text(splitValue[x]));
+                                    }
+                                }
+                                else
+                                    child.Text = item.Value;
+                            }
                             if (child.Text == item.Key)
                             {
                                 if (children.Count() - i >= 2 && i > 0 && children[i - 1].Text == args.SearchFormatPrefix && children[i + 1].InnerXml == args.SearchFormatSuffix)
