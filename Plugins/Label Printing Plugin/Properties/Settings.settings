@@ -1,0 +1,15 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Label_Printing_Plugin.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="labelEngine" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Bartender or Loftware</Value>
+    </Setting>
+    <Setting Name="dropFolder" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">c:\Path\To\Drop\Folder</Value>
+    </Setting>
+    <Setting Name="templateFolder" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">c:\Path\To\Template\Folder</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
