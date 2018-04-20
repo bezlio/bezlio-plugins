@@ -57,7 +57,7 @@ namespace bezlio.rdb.plugins
             try
             {
                 var args = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
-                
+
                 var docText = "";
                 using (var templateDoc = WordprocessingDocument.Open(args.InputFileName, false))
                 using (var outputDoc = WordprocessingDocument.Create("C:\\" + args.OutputFileName, WordprocessingDocumentType.Document))
@@ -71,6 +71,18 @@ namespace bezlio.rdb.plugins
                         for (var i = 0; i < children.Count(); i++)
                         {
                             var child = children[i];
+                            if (child.Text.Contains(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix) && child.Text.Length > (args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix).Length)
+                                child.Text = child.Text.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value);
+
+                            if (child.Text.StartsWith(args.SearchFormatPrefix) && !child.Text.EndsWith(args.SearchFormatSuffix)
+                                && !children[i + 1].Text.StartsWith(args.SearchFormatPrefix) && children[i + 1].Text.EndsWith(args.SearchFormatSuffix)
+                                && i < children.Length + 1)
+                            {
+                                var text = child.Text + children[i + 1].Text;
+                                children[i + 1].Text = "";
+                                child.Text = text.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value);
+                            }
+
                             if (child.Text == args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix)
                             {
 
@@ -107,9 +119,28 @@ namespace bezlio.rdb.plugins
                                     children[i - 1].Text = "";
                                     children[i + 1].Text = "";
                                 }
-                                else
+                            }
+                            else if (child.Text.Contains(args.SearchFormatPrefix)
+                                && !child.Text.Substring(child.Text.IndexOf(args.SearchFormatPrefix) + args.SearchFormatPrefix.Length).Contains(args.SearchFormatSuffix))
+                            {
+                                var j = 1;
+                                var text = child.Text.Substring(child.Text.IndexOf(args.SearchFormatPrefix) + args.SearchFormatPrefix.Length);
+
+                                while (i < children.Length - j && !children[i + j].Text.Contains(args.SearchFormatSuffix))
                                 {
-                                    var x = 0;
+                                    text += children[i + j].Text;
+                                    j++;
+                                }
+
+
+                                if (text.Contains(item.Key))
+                                {
+                                    children[i + j].Text = children[i + j].Text.Replace(args.SearchFormatSuffix, "");
+                                    child.Text = text.Replace(item.Key, item.Value);
+                                    for (var x = j; x > 0; x--)
+                                    {
+                                        children[i + x].Text = "";
+                                    }
                                 }
                             }
                         }
