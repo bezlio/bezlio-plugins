@@ -27,6 +27,7 @@ namespace bezlio.rdb.plugins
         public string ExchangePassword { get; set; }
         public string FromEmailAddressFriendly { get; set; }
         public string DestinationEmailAddress { get; set; }
+        public string testarg { get; set; }
 
         public DataDocWriterDataModel()
         {
@@ -39,26 +40,19 @@ namespace bezlio.rdb.plugins
     {
         public static DataDocWriterDataModel GetArgs()
         {
-
             DataDocWriterDataModel model = new DataDocWriterDataModel();
-            List<SqlFileLocation> contextLocations = SQLServerFunctions.GetLocations();
-
-
             return model;
         }
 
         public static async Task<RemoteDataBrokerResponse> GetOutputFile(RemoteDataBrokerRequest rdbRequest)
         {
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            var response = new RemoteDataBrokerResponse();
             response.Compress = rdbRequest.Compress;
             response.RequestId = rdbRequest.RequestId;
             response.DataType = "applicationJSON";
-
             try
             {
                 var args = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
-
-                var docText = "";
                 using (var templateDoc = WordprocessingDocument.Open(args.InputFileName, false))
                 using (var outputDoc = WordprocessingDocument.Create("C:\\" + args.OutputFileName, WordprocessingDocumentType.Document))
                 {
@@ -155,7 +149,8 @@ namespace bezlio.rdb.plugins
                     outputDoc.Close();
                     templateDoc.Close();
                 }
-                var fs = File.Open("C:\\" + args.OutputFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                File.Copy("C:\\" + args.OutputFileName, "C:\\bezlio.ddw.out." + args.OutputFileName, true);
+                var fs = File.Open("C:\\bezlio.ddw.out." +  args.OutputFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using (var mem = new MemoryStream())
                 {
                     fs.CopyTo(mem);
@@ -177,16 +172,13 @@ namespace bezlio.rdb.plugins
                 email.Send();
 
                 response.Data = JsonConvert.SerializeObject("Your Document has been sent to the provided Email Address.");
+                return response;
             }
             catch (Exception e)
             {
-                //if (!string.IsNullOrEmpty(e.InnerException.ToString())) {
-                //    response.ErrorText += e.InnerException.ToString();
-                //}
                 response.Error = true;
-                response.ErrorText += e.Message;
-            }
-
+                response.ErrorText = e.Message;
+            };
             return response;
         }
 
