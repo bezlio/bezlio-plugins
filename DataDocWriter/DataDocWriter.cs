@@ -27,7 +27,6 @@ namespace bezlio.rdb.plugins
         public string ExchangePassword { get; set; }
         public string FromEmailAddressFriendly { get; set; }
         public string DestinationEmailAddress { get; set; }
-        public string testarg { get; set; }
 
         public DataDocWriterDataModel()
         {
@@ -50,8 +49,6 @@ namespace bezlio.rdb.plugins
             response.Compress = rdbRequest.Compress;
             response.RequestId = rdbRequest.RequestId;
             response.DataType = "applicationJSON";
-            var zzz = 0;
-            var yyy = new KeyValuePair<string, string>();
             var exportParams = deserializeJSONData(rdbRequest);
             try
             {
@@ -64,11 +61,9 @@ namespace bezlio.rdb.plugins
 
                     foreach (KeyValuePair<string, string> item in exportParams)
                     {
-                        yyy = item;
                         var children = templateDoc.MainDocumentPart.Document.Body.Descendants<Text>().ToArray();
                         for (var i = 0; i < children.Count(); i++)
                         {
-                            zzz = i;
                             var child = children[i];
                             if (child.Text.Contains(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix) && child.Text.Length > (args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix).Length)
                                 ReplaceWithFormattedText(child, child.Text.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value));
@@ -191,30 +186,6 @@ namespace bezlio.rdb.plugins
             var populateData = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, object>>>(populateJSON.PopulateDataJSON.ToString());
 
             return populateData.SelectMany(i => i.Value).Select(item => new KeyValuePair<string, string>(item.Key, item.Value.ToString())).ToDictionary(key => key.Key, val => val.Value);
-        }
-
-        private static async Task<RemoteDataBrokerResponse> getFile(RemoteDataBrokerRequest rdbRequest)
-        {
-            var request = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
-
-            // Declare the response object
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = rdbRequest.Compress;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
-
-            try
-            {
-                response.Data = Encoding.ASCII.GetString(File.ReadAllBytes(request.InputFileName));
-            }
-            catch (Exception ex)
-            {
-                response.Error = true;
-                response.ErrorText = Environment.MachineName + ": " + ex.Message;
-            }
-
-            // Return our response
-            return response;
         }
     }
 }
