@@ -50,6 +50,9 @@ namespace bezlio.rdb.plugins
             response.Compress = rdbRequest.Compress;
             response.RequestId = rdbRequest.RequestId;
             response.DataType = "applicationJSON";
+            var zzz = 0;
+            var yyy = new KeyValuePair<string, string>();
+            var exportParams = deserializeJSONData(rdbRequest);
             try
             {
                 var args = JsonConvert.DeserializeObject<DataDocWriterDataModel>(rdbRequest.Data);
@@ -59,14 +62,16 @@ namespace bezlio.rdb.plugins
                     foreach (var part in templateDoc.Parts)
                         outputDoc.AddPart(part.OpenXmlPart, part.RelationshipId);
 
-                    foreach (KeyValuePair<string, string> item in deserializeJSONData(rdbRequest))
+                    foreach (KeyValuePair<string, string> item in exportParams)
                     {
+                        yyy = item;
                         var children = templateDoc.MainDocumentPart.Document.Body.Descendants<Text>().ToArray();
                         for (var i = 0; i < children.Count(); i++)
                         {
+                            zzz = i;
                             var child = children[i];
                             if (child.Text.Contains(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix) && child.Text.Length > (args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix).Length)
-                                child.Text = child.Text.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value);
+                                ReplaceWithFormattedText(child, child.Text.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value));
 
                             if (child.Text.StartsWith(args.SearchFormatPrefix) && !child.Text.EndsWith(args.SearchFormatSuffix)
                                 && !children[i + 1].Text.StartsWith(args.SearchFormatPrefix) && children[i + 1].Text.EndsWith(args.SearchFormatSuffix)
@@ -74,53 +79,34 @@ namespace bezlio.rdb.plugins
                             {
                                 var text = child.Text + children[i + 1].Text;
                                 children[i + 1].Text = "";
-                                child.Text = text.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value);
+                                ReplaceWithFormattedText(child, text.Replace(args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix, item.Value));
                             }
 
                             if (child.Text == args.SearchFormatPrefix + item.Key + args.SearchFormatSuffix)
                             {
-
-                                if (item.Value.Contains("<br/>"))
-                                {
-                                    child.Text = "";
-                                    var splitValue = item.Value.Split(new string[] { "<br/>" }, StringSplitOptions.None);
-                                    for (var x = 0; x < splitValue.Length; x++)
-                                    {
-                                        child.Parent.Append(new Break());
-                                        child.Parent.Append(new Text(splitValue[x]));
-                                    }
-                                }
-                                else
-                                    child.Text = item.Value;
+                                ReplaceWithFormattedText(child, item.Value);
                             }
                             if (child.Text == item.Key)
                             {
                                 if (children.Count() - i >= 2 && i > 0 && children[i - 1].Text == args.SearchFormatPrefix && children[i + 1].InnerXml == args.SearchFormatSuffix)
                                 {
-                                    if (item.Value.Contains("<br/>"))
-                                    {
-                                        child.Text = "";
-                                        var splitValue = item.Value.Split(new string[] { "<br/>" }, StringSplitOptions.None);
-                                        for (var x = 0; x < splitValue.Length; x++)
-                                        {
-                                            child.Parent.Append(new Break());
-                                            child.Parent.Append(new Text(splitValue[x]));
-                                        }
-                                    }
-                                    if (!item.Value.Contains("<br/>"))
-                                        child.Text = item.Value;
-
+                                    ReplaceWithFormattedText(child, item.Value);
                                     children[i - 1].Text = "";
                                     children[i + 1].Text = "";
                                 }
                             }
                             else if (child.Text.Contains(args.SearchFormatPrefix)
+                                && i > 0
+                                && !exportParams.Keys.Contains(children[i - 1].Text)
                                 && !child.Text.Substring(child.Text.IndexOf(args.SearchFormatPrefix) + args.SearchFormatPrefix.Length).Contains(args.SearchFormatSuffix))
                             {
+                                var aaa = children[i - 1].Text;
+                                var bbb = child.Text;
+                                var ccc = children[i + 1].Text;
                                 var j = 1;
                                 var text = child.Text.Substring(child.Text.IndexOf(args.SearchFormatPrefix) + args.SearchFormatPrefix.Length);
 
-                                while (i < children.Length - j && !children[i + j].Text.Contains(args.SearchFormatSuffix))
+                                while (children.Length > i + j && !children[i + j].Text.Contains(args.SearchFormatSuffix))
                                 {
                                     text += children[i + j].Text;
                                     j++;
@@ -130,7 +116,7 @@ namespace bezlio.rdb.plugins
                                 if (text.Contains(item.Key))
                                 {
                                     children[i + j].Text = children[i + j].Text.Replace(args.SearchFormatSuffix, "");
-                                    child.Text = text.Replace(item.Key, item.Value);
+                                    ReplaceWithFormattedText(child, text.Replace(item.Key, item.Value));
                                     for (var x = j; x > 0; x--)
                                     {
                                         children[i + x].Text = "";
@@ -180,6 +166,22 @@ namespace bezlio.rdb.plugins
                 response.ErrorText = e.Message;
             };
             return response;
+        }
+
+        private static void ReplaceWithFormattedText(Text target, string replaceValue)
+        {
+            if (replaceValue.Contains("<br/>"))
+            {
+                target.Text = "";
+                var splitValue = replaceValue.Split(new string[] { "<br/>" }, StringSplitOptions.None);
+                for (var x = 0; x < splitValue.Length; x++)
+                {
+                    target.Parent.Append(new Break());
+                    target.Parent.Append(new Text(splitValue[x]));
+                }
+            }
+            else
+                target.Text = replaceValue;
         }
 
         private static Dictionary<string, string> deserializeJSONData(RemoteDataBrokerRequest rdbRequest)
