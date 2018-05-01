@@ -228,7 +228,7 @@ namespace bezlio.rdb.plugins {
                 email.Body = request.EmailBody;
                 email.Send();
 
-                response.Data = "SUCCESS. EMAIL SENT.";
+                response.Data = JsonConvert.SerializeObject("SUCCESS. EMAIL SENT.");
                 response.Error = false;
                 response.ErrorText = "SUCCESS";
 
