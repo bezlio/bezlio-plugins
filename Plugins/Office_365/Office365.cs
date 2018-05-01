@@ -1,11 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using Microsoft.Exchange.WebServices.Data;
 using Newtonsoft.Json;
-using Microsoft.Exchange.WebServices.Data;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace bezlio.rdb.plugins {
@@ -13,6 +13,7 @@ namespace bezlio.rdb.plugins {
         public Office365_Model GetMail { get; set; }
         public Office365_Model ProcessEmail { get; set; }
         public Office365Local_Model ProcessEmailLocal { get; set; }
+        public SendEmailAttachment_Model SendEmailAttachment { get; set; }
     }
     #region 
     class Office365_Model {
@@ -58,6 +59,20 @@ namespace bezlio.rdb.plugins {
         public List<string> Attachments { get; set; }
         public string Id { get; set; }
     }
+    #endregion
+
+    #region SendEmailAttachmentModel
+
+
+    class SendEmailAttachment_Model
+    {
+        public string UserName { get; set; }
+        public string Password { get; set; }
+        public string Destination { get; set; }
+        public string EmailBody { get; set; }
+        public string FileFullName { get; set; }
+    }
+
     #endregion
 
     class ProcessMsg_Model {
@@ -106,6 +121,16 @@ namespace bezlio.rdb.plugins {
                 SubjectFilter = "Email subject filter - leave blank for none (EXC- for exclude, INC- for include)",
                 AttachmentLocation = "Location to store attachments - used only for Local Processing method"
             };
+
+            model.SendEmailAttachment = new SendEmailAttachment_Model
+            {
+                UserName = "Email Address",
+                Password = "Email password",
+                Destination = "To Email Address",
+                EmailBody = "Outbound Email Body Text",
+                FileFullName = "Full File Path and File Name of File Attachment"
+            };
+
 
             return model;
         }
@@ -176,6 +201,52 @@ namespace bezlio.rdb.plugins {
 
             return response;
         }
+        #endregion
+
+        #region SendEmailAttachment
+
+
+        public static async Task<RemoteDataBrokerResponse> SendEmailAttachment(RemoteDataBrokerRequest rdbRequest)
+        {
+            SendEmailAttachment_Model request = JsonConvert.DeserializeObject<SendEmailAttachment_Model>(rdbRequest.Data);
+
+            var response = GetResponseObject(rdbRequest.RequestId, true);
+
+            try
+            {
+                var exchange = new ExchangeService();
+                exchange.TraceEnabled = true;
+                exchange.TraceFlags = TraceFlags.All;
+
+                exchange.Credentials = new WebCredentials(request.UserName, request.Password);
+                exchange.Url = new Uri("https://outlook.office365.com/EWS/Exchange.asmx");
+
+                var email = new Microsoft.Exchange.WebServices.Data.EmailMessage(exchange);
+                email.Attachments.AddFileAttachment(request.FileFullName);
+                email.ToRecipients.Add(new EmailAddress(request.Destination));
+                email.From = new EmailAddress(request.UserName);
+                email.Body = request.EmailBody;
+                email.Send();
+
+                response.Data = "SUCCESS. EMAIL SENT.";
+                response.Error = false;
+                response.ErrorText = "SUCCESS";
+
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
+                response.Error = true;
+                response.ErrorText = ex.Message;
+            }
+
+            return response;
+        }
+
         #endregion
 
         #region GetBody
