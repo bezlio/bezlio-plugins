@@ -25,7 +25,7 @@ namespace bezlio.rdb.plugins
                     XDocument xConfig = XDocument.Load(cfgPath);
 
                     // Get the settings for the connections
-                    XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
+                    XElement xConnections = xConfig.Descendants("bezlio.rdb.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "connections").FirstOrDefault();
                     if (xConnections != null)
                     {
                         strConnections = xConnections.Value;
@@ -65,7 +65,7 @@ namespace bezlio.rdb.plugins
                     // Load in the cfg file
                     XDocument xConfig = XDocument.Load(cfgPath);
 
-                    XElement xClientPath = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "epicorClientPath").FirstOrDefault();
+                    XElement xClientPath = xConfig.Descendants("bezlio.rdb.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "epicorClientPath").FirstOrDefault();
                     if (xClientPath != null)
                     {
                         clientPath = xClientPath.Value;
@@ -76,6 +76,29 @@ namespace bezlio.rdb.plugins
             }
             catch (Exception ex)
             {
+                response.Error = true;
+                response.ErrorText = ex.Message;
+                return null;
+            }
+        }
+
+        public static string GetConfigName(ref RemoteDataBrokerResponse response) {
+            try {
+                string asmPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string cfgPath = asmPath + @"\Epicor10.dll.config";
+                string configName = "";
+
+                if (File.Exists(cfgPath)) {
+                    XDocument xConfig = XDocument.Load(cfgPath);
+
+                    XElement xConfigName = xConfig.Descendants("bezlio.rdb.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "epicorConfigName").FirstOrDefault();
+                    if (xConfigName != null) {
+                        configName = xConfigName.Value;
+                    }
+                }
+
+                return configName;
+            } catch (Exception ex) {
                 response.Error = true;
                 response.ErrorText = ex.Message;
                 return null;

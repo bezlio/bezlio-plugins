@@ -12,7 +12,7 @@ namespace bezlio.rdb.plugins.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "14.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "15.5.0.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -28,10 +28,22 @@ namespace bezlio.rdb.plugins.Properties {
         [global::System.Configuration.DefaultSettingValueAttribute(@"
                   [
                   {
-                  'connectionName': 'Epicor 10 AE',
-                  'appServerUrl': 'net.tcp://DEV-EPICOR10/ERP100700_AE',
-                  'userName': 'manager',
-                  'password': 'manager'
+                  'connectionName': 'Production',
+                  'appServerUrl': 'net.tcp://YOUR_APP_SERVER_NAME/YOUR_INSTANCE',
+                  'userName': 'YOUR_EPICOR_LOGIN',
+                  'password': 'YOUR_EPICOR_PASSWORD'
+                  },
+                  {
+                  'connectionName': 'Test',
+                  'appServerUrl': 'net.tcp://YOUR_APP_SERVER_NAME/YOUR_INSTANCE',
+                  'userName': 'YOUR_EPICOR_LOGIN',
+                  'password': 'YOUR_EPICOR_PASSWORD'
+                  },
+                  {
+                  'connectionName': 'Training',
+                  'appServerUrl': 'net.tcp://YOUR_APP_SERVER_NAME/YOUR_INSTANCE',
+                  'userName': 'YOUR_EPICOR_LOGIN',
+                  'password': 'YOUR_EPICOR_PASSWORD'
                   }
                   ]
                 
@@ -48,6 +60,15 @@ namespace bezlio.rdb.plugins.Properties {
         public string epicorClientPath {
             get {
                 return ((string)(this["epicorClientPath"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string epicorConfigName {
+            get {
+                return ((string)(this["epicorConfigName"]));
             }
         }
     }

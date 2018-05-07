@@ -26,11 +26,12 @@ namespace bezlio.rdb.plugins
                 if (connection != null)
                 {
                     string clientPath = Config.GetClientPath(ref response);
+                    string configPath = clientPath + @"\config\" + Config.GetConfigName(ref response);
 
                     Assembly sessionAssembly = null;
 
                     sessionAssembly = Assembly.LoadFrom(clientPath + @"\Ice.Core.Session.dll");
-                    epicorConn = Activator.CreateInstance(sessionAssembly.GetType("Ice.Core.Session"), new object[] { connection.UserName, connection.Password, connection.AppServerUrl });
+                    epicorConn = Activator.CreateInstance(sessionAssembly.GetType("Ice.Core.Session"), new object[] { connection.UserName, connection.Password, connection.AppServerUrl, null, configPath });
                     epicorConn.GetType().InvokeMember("CompanyID",
                                  BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
                                  Type.DefaultBinder, epicorConn, new Object[] { companyId });
