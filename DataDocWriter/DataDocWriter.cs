@@ -13,6 +13,8 @@ using bezlio.rdb.plugins;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.IO.Packaging;
 using Microsoft.Exchange.WebServices.Data;
+using System.Xml;
+using System.Text.RegularExpressions;
 
 namespace bezlio.rdb.plugins
 {
@@ -130,8 +132,10 @@ namespace bezlio.rdb.plugins
                     outputDoc.Close();
                     templateDoc.Close();
                 }
-                File.Copy("C:\\" + args.OutputFileName, "C:\\bezlio.ddw.out." + args.OutputFileName, true);
-                var fs = File.Open("C:\\bezlio.ddw.out." +  args.OutputFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                var timestamp = DateTime.UtcNow.ToFileTimeUtc().ToString();
+                File.Delete("C:\\bezlio.ddw.out." + timestamp + "." + args.OutputFileName);
+                File.Copy("C:\\" + args.OutputFileName, "C:\\bezlio.ddw.out." +  timestamp + "." + args.OutputFileName, true);
+                var fs = File.Open("C:\\bezlio.ddw.out." + timestamp + "." + args.OutputFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using (var mem = new MemoryStream())
                 {
                     fs.CopyTo(mem);
@@ -152,6 +156,9 @@ namespace bezlio.rdb.plugins
                 email.Body = "Your Document is attached to this message.";
                 email.Send();
 
+                File.Delete("C:\\bezlio.ddw.out." + timestamp + "." + args.OutputFileName);
+                File.Delete(@"C:\" + args.OutputFileName);
+
                 response.Data = JsonConvert.SerializeObject("Your Document has been sent to the provided Email Address.");
                 return response;
             }
@@ -165,15 +172,130 @@ namespace bezlio.rdb.plugins
 
         private static void ReplaceWithFormattedText(Text target, string replaceValue)
         {
-            if (replaceValue.Contains("<br/>"))
+            if (replaceValue.Contains("<br/>") || replaceValue.Contains("<b>"))
             {
                 target.Text = "";
                 var splitValue = replaceValue.Split(new string[] { "<br/>" }, StringSplitOptions.None);
                 for (var x = 0; x < splitValue.Length; x++)
                 {
-                    target.Parent.Append(new Break());
-                    target.Parent.Append(new Text(splitValue[x]));
+                    //target.Parent.Append(new Break());
+                    //target.Parent.Append(new Text(splitValue[x]));
                 }
+                var xml = Regex.Replace(replaceValue, "<(?!text)([0-9A-Za-z]+?)>", "</text><$1>");
+                xml = Regex.Replace(xml, "<(?!/text)(/[0-9A-Za-z]+?)>", "<$1><text>");
+                xml = Regex.Replace(xml, "<([B|b][R|r] */)>", "</text><$1><text>");
+                xml = "<body><text>" + xml + "</text></body>";
+                var xmlDoc = XDocument.Parse(xml);
+                var descendants = xmlDoc.Descendants().ToArray();
+                var paragraph = new Paragraph();
+                var paragraphProperties = new ParagraphProperties();
+                var formattedRun = new Run();
+                var runProperties = new RunProperties();
+                var runText = new Text();
+                for (var i = 1; i < descendants.Count(); i++)
+                {
+                    XElement child = descendants[i];
+                    runText = new Text() { Text = child.Value, Space = SpaceProcessingModeValues.Preserve };
+                    if(!string.IsNullOrWhiteSpace(child.Value))
+                    {
+                        paragraphProperties = new ParagraphProperties();
+                        formattedRun = new Run();
+                        //runProperties = new RunProperties();
+                    }
+                    else
+                    {
+                        if (formattedRun.Parent.Descendants().OfType<RunProperties>().Count() > 0)
+                        {
+                            //runProperties = formattedRun.Parent.Descendants().OfType<RunProperties>().ToArray()[0];
+                            //formattedRun.RemoveChild<RunProperties>(formattedRun.GetFirstChild<RunProperties>());
+                        }
+                        //if (formattedRun.Parent.Descendants().OfType<ParagraphProperties>().Count() > 0)
+                        //{
+                        //    paragraphProperties = formattedRun.Parent.Descendants().OfType<ParagraphProperties>().ToArray()[0];
+                        //    formattedRun.Parent.RemoveChild<ParagraphProperties>(formattedRun.GetFirstChild<ParagraphProperties>());
+                        //}
+                        //if (formattedRun.Descendants().OfType<Text>().Count() > 0)
+                        //{
+                        //    runText = formattedRun.Descendants().OfType<Text>().ToArray()[0];
+                        //    formattedRun.RemoveChild<Text>(formattedRun.GetFirstChild<Text>());
+                        //}
+                    }
+                    var newParagraph = false;
+                    switch (child.Name.LocalName.ToUpper())
+                    {
+                        case "B":
+                            runProperties.Append(new Bold());
+                            break;
+                        case "I":
+                            runProperties.Append(new Italic());
+                            break;
+                        case "U":
+                            runProperties.Append(new Underline());
+                            break;
+                        case "LEFT":
+                            paragraph = new Paragraph();
+                            paragraphProperties = new ParagraphProperties();
+                            paragraphProperties.Append(new Justification() { Val = JustificationValues.Left });
+                            paragraph.Append(paragraphProperties);
+                            newParagraph = true;
+                            break;
+                        case "RIGHT":
+                            paragraph = new Paragraph();
+                            paragraphProperties = new ParagraphProperties();
+                            paragraphProperties.Append(new Justification() { Val = JustificationValues.Right });
+                            paragraph.Append(paragraphProperties);
+                            paragraphProperties.Append(new Bold());
+                            newParagraph = true;
+                            break;
+                        case "CENTER":
+                        case "CENTRE":
+                            paragraph = new Paragraph();
+                            paragraphProperties = new ParagraphProperties();
+                            paragraphProperties.Append(new Justification() { Val = JustificationValues.Center });
+                            paragraph.Append(paragraphProperties);
+                            newParagraph = true;
+                            break;
+                        case "BR":
+                            formattedRun.Append(new Break());
+                            break;
+                    }
+
+
+                    var fontSize = 11;
+                    if(int.TryParse(child.Name.LocalName, out fontSize))
+                        formattedRun.Append(new FontSize() { Val = fontSize.ToString() });
+
+                    if(!newParagraph && runProperties.Parent == null)
+                        formattedRun.Append(runProperties);
+
+                    formattedRun.Append(runText);
+
+                    if(!newParagraph && !string.IsNullOrWhiteSpace(child.Value))
+                        target.Parent.Parent.Append(formattedRun);
+
+                    if (newParagraph)
+                    {
+                        var defaultFormatParagraph = new Paragraph();
+                        var defaultFormatParagraphRun = new Run(); 
+                        var defaultFormatParagraphText = new Text();
+                        defaultFormatParagraphRun.Append(defaultFormatParagraphText);
+                        defaultFormatParagraph.Append(defaultFormatParagraphRun);
+                        target.Parent.Parent.Parent.InsertAfter(defaultFormatParagraph, target.Parent.Parent);
+
+                        paragraph.Append(formattedRun);
+                        runProperties = new RunProperties();
+                        formattedRun.RunProperties = runProperties;
+
+                        target.Parent.Parent.Parent.InsertAfter(paragraph, target.Parent.Parent);
+                        target = defaultFormatParagraphText;
+
+                        formattedRun = defaultFormatParagraphRun;
+                        runText = defaultFormatParagraphText;
+
+                        newParagraph = false;
+                    }
+                }
+
             }
             else
                 target.Text = replaceValue;
