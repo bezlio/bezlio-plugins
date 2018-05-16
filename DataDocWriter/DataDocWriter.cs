@@ -156,8 +156,12 @@ namespace bezlio.rdb.plugins
                 email.Body = "Your Document is attached to this message.";
                 email.Send();
 
-                File.Delete("C:\\bezlio.ddw.out." + timestamp + "." + args.OutputFileName);
-                File.Delete(@"C:\" + args.OutputFileName);
+                email.Attachments.Clear();
+
+                //Need to investigate removing output temp files after use
+
+                //File.Delete(@"C:\" + args.OutputFileName);
+                //File.Delete("C:\\bezlio.ddw.out." + timestamp + "." + args.OutputFileName);
 
                 response.Data = JsonConvert.SerializeObject("Your Document has been sent to the provided Email Address.");
                 return response;
@@ -200,25 +204,6 @@ namespace bezlio.rdb.plugins
                     {
                         paragraphProperties = new ParagraphProperties();
                         formattedRun = new Run();
-                        //runProperties = new RunProperties();
-                    }
-                    else
-                    {
-                        if (formattedRun.Parent.Descendants().OfType<RunProperties>().Count() > 0)
-                        {
-                            //runProperties = formattedRun.Parent.Descendants().OfType<RunProperties>().ToArray()[0];
-                            //formattedRun.RemoveChild<RunProperties>(formattedRun.GetFirstChild<RunProperties>());
-                        }
-                        //if (formattedRun.Parent.Descendants().OfType<ParagraphProperties>().Count() > 0)
-                        //{
-                        //    paragraphProperties = formattedRun.Parent.Descendants().OfType<ParagraphProperties>().ToArray()[0];
-                        //    formattedRun.Parent.RemoveChild<ParagraphProperties>(formattedRun.GetFirstChild<ParagraphProperties>());
-                        //}
-                        //if (formattedRun.Descendants().OfType<Text>().Count() > 0)
-                        //{
-                        //    runText = formattedRun.Descendants().OfType<Text>().ToArray()[0];
-                        //    formattedRun.RemoveChild<Text>(formattedRun.GetFirstChild<Text>());
-                        //}
                     }
                     var newParagraph = false;
                     switch (child.Name.LocalName.ToUpper())
@@ -261,9 +246,9 @@ namespace bezlio.rdb.plugins
                     }
 
 
-                    var fontSize = 11;
-                    if(int.TryParse(child.Name.LocalName, out fontSize))
-                        formattedRun.Append(new FontSize() { Val = fontSize.ToString() });
+                    var fontSize = 11.0;
+                    if(double.TryParse(child.Name.LocalName.Substring(1), out fontSize))
+                        runProperties.Append(new FontSize() { Val = (fontSize * 2.0).ToString() });
 
                     if(!newParagraph && runProperties.Parent == null)
                         formattedRun.Append(runProperties);
