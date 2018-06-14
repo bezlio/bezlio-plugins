@@ -50,13 +50,13 @@
   <ItemGroup>
     <Reference Include="MWSClientCsRuntime-1.0, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>D:\SaberLogic\Bezlio\Amazon\Amazon DLLs\Orders\dist\MWSClientCsRuntime-1.0.dll</HintPath>
+      <HintPath>..\..\..\..\..\Downloads\MWSProductsCSharpClientLibrary-2011-10-01._CB531003268_\dist\MWSClientCsRuntime-1.0.dll</HintPath>
     </Reference>
     <Reference Include="MWSOrders_2013-09-01_v2018-01-31">
-      <HintPath>D:\SaberLogic\Bezlio\Amazon\Amazon DLLs\Orders\dist\MWSOrders_2013-09-01_v2018-01-31.dll</HintPath>
+      <HintPath>..\..\..\..\..\Downloads\MWSProductsCSharpClientLibrary-2011-10-01._CB531003268_\MWSOrders_2013-09-01_v2018-01-31.dll</HintPath>
     </Reference>
     <Reference Include="MWSRecommendations_2013-04-01_v2015-06-18">
-      <HintPath>D:\SaberLogic\Bezlio\Amazon\Amazon DLLs\Recommendations\dist\MWSRecommendations_2013-04-01_v2015-06-18.dll</HintPath>
+      <HintPath>..\..\..\..\..\Downloads\MWSProductsCSharpClientLibrary-2011-10-01._CB531003268_\MWSRecommendations_2013-04-01_v2015-06-18.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

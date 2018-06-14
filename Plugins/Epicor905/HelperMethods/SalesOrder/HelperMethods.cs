@@ -3,6 +3,8 @@ using System;
 using System.Data;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
 {
@@ -24,8 +26,79 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
         public SalesOrder_SubmitNewOrderModel()  { }
     }
 
+    public class SalesOrder_MassUpdateModel
+    {
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public List<string> Orders { get; set; }
+
+        public SalesOrder_MassUpdateModel()
+        {
+            this.Orders = new List<string>();
+        }
+    }
+
     public class SalesOrderHelperMethods
     {
+        public static async Task<RemoteDataBrokerResponse> SalesOrder_MassUpdate(RemoteDataBrokerRequest rdbRequest)
+        {
+            // This is a helper to run new GetNewOrderHed, change the customer, run ChangeCustomer then return the ds
+            // Deserialize the request object
+            SalesOrder_MassUpdateModel request = JsonConvert.DeserializeObject<SalesOrder_MassUpdateModel>(rdbRequest.Data);
+
+            // Create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            // Establish a connection to Epicor
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+
+            List<string> PONums = new List<string>();
+
+            try
+            {
+                foreach(var order in request.Orders)
+                {
+                    // Load the referenced BO
+                    object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);
+                    Type t = bo.GetType().GetMethod("GetNewOrderHed").GetParameters()[0].ParameterType;
+
+                    JsonSerializerSettings settings = new JsonSerializerSettings();
+                    var ds = JsonConvert.DeserializeObject(order, t, settings);
+
+                    PONums.Add(((DataSet)ds).Tables["OrderHed"].Rows[0]["PONum"].ToString());
+                }
+
+                response.Data = JsonConvert.SerializeObject(PONums);
+
+                /*// Load the referenced BO
+                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);
+                Type t = bo.GetType().GetMethod("GetNewOrderHed").GetParameters()[0].ParameterType;
+                // Setup a blank dataset of the orderdataset type returned from reflection
+                var ds = JsonConvert.DeserializeObject("{}", t, new JsonSerializerSettings());
+                // Call get new order hed
+                bo.GetType().GetMethod("GetNewOrderHed").Invoke(bo, new object[] { ds });
+                // Now we set the CustNum
+                ((DataSet)ds).Tables["OrderHed"].Rows[0]["CustNum"] = request.CustNum;
+                // Invoke the ChangeCustomer method
+                bo.GetType().GetMethod("ChangeCustomer").Invoke(bo, new object[] { ds });
+                // Return the response as success if it got this far
+                response.Data = JsonConvert.SerializeObject(ds);*/
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
+                response.Error = true;
+                response.ErrorText += ex.Message;
+            }
+            finally { Common.CloseEpicorConnection(epicorConn, ref response); }
+
+            // Return response object
+            return response;
+        }
 
         public static async Task<RemoteDataBrokerResponse> SalesOrder_NewOrderByCustomer(RemoteDataBrokerRequest rdbRequest)
         {

@@ -19,6 +19,7 @@ namespace bezlio.rdb.plugins
     class Amazon_ListModel {
         public GetOpenOrders_Model GetOpenOrdersList { get; set; }
         public GetOrder_Model GetOrderByID { get; set; }
+        public GetOrders_Model GetOrdersByID { set; get; }
     }
 
     class GetOpenOrders_Model {
@@ -28,6 +29,11 @@ namespace bezlio.rdb.plugins
 
     class GetOrder_Model {
         public string orderId { get; set; }
+    }
+
+    class GetOrders_Model
+    {
+        public List<string> Orders { set; get; }
     }
 
     public class Amazon
@@ -52,6 +58,11 @@ namespace bezlio.rdb.plugins
 
             model.GetOrderByID = new GetOrder_Model() {
                 orderId = "Order ID (comma separated)"
+            };
+
+            model.GetOrdersByID = new GetOrders_Model
+            {
+                Orders = new List<string>()
             };
 
             return model;
@@ -141,11 +152,11 @@ namespace bezlio.rdb.plugins
                 ordersRequest.MarketplaceId = new List<string>(new string[] { marketplaceId });
 
                 ordersRequest.CreatedAfter = request.createdAfter;
-                ordersRequest.OrderStatus = request.orderStatus.Split(',').ToList();
+                ordersRequest.OrderStatus = request.orderStatus.Split(',').ToList();                
 
-                var data = ordersClient.ListOrders(ordersRequest);
+                var data = ordersClient.ListOrders(ordersRequest);                
 
-                response.Data = JsonConvert.SerializeObject(data);
+                    response.Data = JsonConvert.SerializeObject(data);
             }
             catch (Exception ex) {
                 if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
@@ -153,6 +164,78 @@ namespace bezlio.rdb.plugins
 
                 response.Error = true;
                 response.ErrorText = ex.Message;
+            }
+
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> GetOrdersById(RemoteDataBrokerRequest rdbRequest)
+        {
+            RemoteDataBrokerResponse response = GetResponseObject(rdbRequest.RequestId, true);
+
+            GetOrders_Model request = null;
+
+            try
+            {
+                request = JsonConvert.DeserializeObject<GetOrders_Model>(rdbRequest.Data);
+            }
+            catch
+            {
+                response.Error = true;
+                response.ErrorText = "Testing!!";
+            }
+
+            dynamic data = new List<dynamic>();
+
+            //obtain all of the order information
+            try
+            {
+                //create a list of all of the order IDs
+                StringBuilder sb = new StringBuilder();
+                foreach (var order in request.Orders)
+                    sb.Append(order).Append(',');
+
+                //now, get ALL of the requested orders
+                GetOrderRequest orderRequest = new GetOrderRequest(sellerId, sb.ToString().TrimEnd(',').Split(',').ToList());
+                orderRequest.MWSAuthToken = mwsAuthToken;
+
+                var orderData = ordersClient.GetOrder(orderRequest);
+                
+                //go through each of the order results and obtain their order items
+                for (int i = 0; i < orderData.GetOrderResult.Orders.Count; i++)
+                {
+                    dynamic orderObject = new ExpandoObject();
+                    orderObject.Order = orderData.GetOrderResult.Orders[i];                    
+
+                    ListOrderItemsRequest orderItemRequest = new ListOrderItemsRequest(sellerId, orderData.GetOrderResult.Orders[i].AmazonOrderId);
+                    orderItemRequest.MWSAuthToken = mwsAuthToken;
+
+                    var orderItemData = ordersClient.ListOrderItems(orderItemRequest);
+
+                    orderObject.OrderItems = orderItemData.ListOrderItemsResult.OrderItems;                    
+
+                    data.Add(orderObject);
+
+                    //determine if we need to put a wait in, depending on the max quota and if there are more requests
+                    if (orderItemData.ResponseHeaderMetadata.QuotaRemaining == 0 && i + 1 < orderData.GetOrderResult.Orders.Count && orderItemData.ResponseHeaderMetadata.QuotaResetsAt != null)
+                    {
+                        //we need to wait until the reset time
+                        var timeUntil = ((DateTime)orderItemData.ResponseHeaderMetadata.QuotaResetsAt).Subtract(DateTime.Now);
+                        System.Threading.Thread.Sleep(timeUntil);
+                    }
+                }
+
+                response.Data = JsonConvert.SerializeObject(data);
+            }
+            catch (Exception ex)
+            {
+                if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
+                {
+                    response.ErrorText += ex.InnerException.ToString();
+                }
+
+                response.Error = true;
+                response.ErrorText = ex.ToString();
             }
 
             return response;
@@ -174,7 +257,7 @@ namespace bezlio.rdb.plugins
 
                 var orderItemData = ordersClient.ListOrderItems(orderItemRequest);
 
-                dynamic data = new ExpandoObject();
+                dynamic data = new ExpandoObject();                
                 data.Order = orderData.GetOrderResult.Orders[0];
                 data.OrderItems = orderItemData.ListOrderItemsResult.OrderItems;
                                
