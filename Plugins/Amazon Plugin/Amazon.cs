@@ -216,12 +216,11 @@ namespace bezlio.rdb.plugins
 
                     data.Add(orderObject);
 
-                    //determine if we need to put a wait in, depending on the max quota and if there are more requests
-                    if (orderItemData.ResponseHeaderMetadata.QuotaRemaining == 0 && i + 1 < orderData.GetOrderResult.Orders.Count && orderItemData.ResponseHeaderMetadata.QuotaResetsAt != null)
+                    //if there are more items to process, put in a 2 second wait, to allow the requests to replenish
+                    if (i + 1 < orderData.GetOrderResult.Orders.Count)
                     {
-                        //we need to wait until the reset time
-                        var timeUntil = ((DateTime)orderItemData.ResponseHeaderMetadata.QuotaResetsAt).Subtract(DateTime.Now);
-                        System.Threading.Thread.Sleep(timeUntil);
+                        //we need to wait until the reset time                        
+                        System.Threading.Thread.Sleep(2000);
                     }
                 }
 

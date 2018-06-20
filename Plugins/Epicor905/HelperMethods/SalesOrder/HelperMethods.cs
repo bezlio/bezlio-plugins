@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 
 namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
 {
@@ -14,7 +15,7 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
         public string Company { get; set; }
         public string CustNum { get; set; }
 
-        public SalesOrder_NewOrderByCustomerModel()  { }
+        public SalesOrder_NewOrderByCustomerModel() { }
     }
 
     class SalesOrder_SubmitNewOrderModel
@@ -23,7 +24,7 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
         public string Company { get; set; }
         public string ds { get; set; }
 
-        public SalesOrder_SubmitNewOrderModel()  { }
+        public SalesOrder_SubmitNewOrderModel() { }
     }
 
     public class SalesOrder_MassUpdateModel
@@ -52,37 +53,42 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
             // Establish a connection to Epicor
             object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
 
-            List<string> PONums = new List<string>();
+            dynamic data = new List<dynamic>();
 
             try
             {
-                foreach(var order in request.Orders)
+                foreach (var order in request.Orders)
                 {
                     // Load the referenced BO
                     object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);
-                    Type t = bo.GetType().GetMethod("GetNewOrderHed").GetParameters()[0].ParameterType;
+                    Type t = bo.GetType().GetMethod("UpdateExt").GetParameters()[0].ParameterType;
 
                     JsonSerializerSettings settings = new JsonSerializerSettings();
+                    DataSet dss = new DataSet();
                     var ds = JsonConvert.DeserializeObject(order, t, settings);
 
-                    PONums.Add(((DataSet)ds).Tables["OrderHed"].Rows[0]["PONum"].ToString());
+                    //we should have the complete order dataset...see if we can just save the thing
+                    var myReturn = bo.GetType().GetMethod("UpdateExt").Invoke(bo, new object[] { ds, true, false, false });
+
+                    dynamic orderReturn = new ExpandoObject();
+
+                    orderReturn.Order = ds;
+                    orderReturn.IsError = false;
+                    orderReturn.Errors = "";
+
+                    if (((DataSet)myReturn).Tables["BOUpdError"].Rows.Count > 0)
+                    {
+                        orderReturn.IsError = true;
+                        response.Error = true;
+                        orderReturn.Errors = ((DataSet)myReturn).Tables["BOUpdError"].Rows[0]["ErrorText"].ToString();
+                        response.ErrorText += "Error for Amazon Order: " + ((DataSet)ds).Tables["OrderHed"].Rows[0]["PONum"].ToString() + ": " + orderReturn.Errors + "<br />";
+                    }
+
+                    data.Add(orderReturn);
                 }
 
-                response.Data = JsonConvert.SerializeObject(PONums);
+                response.Data = JsonConvert.SerializeObject(data);
 
-                /*// Load the referenced BO
-                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);
-                Type t = bo.GetType().GetMethod("GetNewOrderHed").GetParameters()[0].ParameterType;
-                // Setup a blank dataset of the orderdataset type returned from reflection
-                var ds = JsonConvert.DeserializeObject("{}", t, new JsonSerializerSettings());
-                // Call get new order hed
-                bo.GetType().GetMethod("GetNewOrderHed").Invoke(bo, new object[] { ds });
-                // Now we set the CustNum
-                ((DataSet)ds).Tables["OrderHed"].Rows[0]["CustNum"] = request.CustNum;
-                // Invoke the ChangeCustomer method
-                bo.GetType().GetMethod("ChangeCustomer").Invoke(bo, new object[] { ds });
-                // Return the response as success if it got this far
-                response.Data = JsonConvert.SerializeObject(ds);*/
             }
             catch (Exception ex)
             {
@@ -92,7 +98,7 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
                 }
 
                 response.Error = true;
-                response.ErrorText += ex.Message;
+                response.ErrorText += ex.ToString();
             }
             finally { Common.CloseEpicorConnection(epicorConn, ref response); }
 
@@ -111,11 +117,11 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
 
             // Establish a connection to Epicor
             object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
-            
+
             try
             {
                 // Load the referenced BO
-                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);          
+                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);
                 Type t = bo.GetType().GetMethod("GetNewOrderHed").GetParameters()[0].ParameterType;
                 // Setup a blank dataset of the orderdataset type returned from reflection
                 var ds = JsonConvert.DeserializeObject("{}", t, new JsonSerializerSettings());
@@ -155,13 +161,13 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
 
             // Establish a connection to Epicor
             object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
-            
+
             try
             {
                 // Load the referenced BO
-                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);          
+                object bo = Common.GetBusinessObject(epicorConn, "SalesOrder", ref response);
                 Type t = bo.GetType().GetMethod("SubmitNewOrder").GetParameters()[0].ParameterType;
-                
+
                 // Serialize the passed object into the order data type
                 var ds = JsonConvert.DeserializeObject(request.ds, t, new JsonSerializerSettings());
                 // Call to submit the order
