@@ -441,7 +441,10 @@ namespace bezlio.rdb.plugins
             switch (_databaseType)
             {
                 case "SQL Server":
-                    oConnection = new SqlConnection("server=" + _serverAddress + ";uid=" + _userName + ";pwd=" + _password + ";database=" + _databaseName + ";Connection Timeout=150");
+                    if(_userName != null && _userName.Trim().Length > 0)
+                        oConnection = new SqlConnection("server=" + _serverAddress + ";uid=" + _userName + ";pwd=" + _password + ";database=" + _databaseName + ";Connection Timeout=150");
+                    else //assume integrated authentication
+                        oConnection = new SqlConnection("server=" + _serverAddress + ";database=" + _databaseName + ";Connection Timeout=150;integrated security = SSPI");
                     break;
             }
 
