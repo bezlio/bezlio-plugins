@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TensorFlow Plugin", "Tensor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Amazon Plugin", "Plugins\Amazon Plugin\Amazon Plugin.csproj", "{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WCF Plugin", "WCF Plugin\WCF Plugin.csproj", "{4E0CD05C-F89D-4068-846E-9B4C6266798B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -220,6 +222,14 @@ Global
 		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|x86.ActiveCfg = Release|x86
 		{F3A52A8C-89A5-4870-ABDB-03B231EEDC1B}.Release|x86.Build.0 = Release|x86
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Debug|x86.Build.0 = Debug|Any CPU
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Release|x86.ActiveCfg = Release|Any CPU
+		{4E0CD05C-F89D-4068-846E-9B4C6266798B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

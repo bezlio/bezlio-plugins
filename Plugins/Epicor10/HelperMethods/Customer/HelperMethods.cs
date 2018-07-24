@@ -33,10 +33,10 @@ namespace bezlio.rdb.plugins.HelperMethods.Customer
                 object bo = Common.GetBusinessObject(epicorConn, "Customer", ref response);
                 Type t = bo.GetType().GetMethod("GetNewCustomer").GetParameters()[0].ParameterType;
                 DataSet newDS = (DataSet)JsonConvert.DeserializeObject("{}", t, new JsonSerializerSettings());
-                DataSet custDS = (DataSet)JsonConvert.DeserializeObject(request.CustDS, typeof(DataSet), new JsonSerializerSettings());
+                DataSet custDS = (DataSet)JsonConvert.DeserializeObject(request.CustDS, typeof(DataSet), new JsonSerializerSettings());                
 
-                if (custDS.Tables.IndexOf("Customer") > -1)
-                    foreach (DataRow dr in custDS.Tables["Customer"].Rows)
+                if(custDS.Tables.IndexOf("Customer") > -1)
+                    foreach(DataRow dr in custDS.Tables["Customer"].Rows)
                     {
                         newDS.Clear();
 
@@ -54,9 +54,9 @@ namespace bezlio.rdb.plugins.HelperMethods.Customer
                     }
 
                 response.Data = JsonConvert.SerializeObject(newDS);
-
+                
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
                 {

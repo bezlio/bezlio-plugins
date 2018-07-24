@@ -5,6 +5,9 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Dynamic;
+using Westwind.wwScripting;
+using Microsoft.CSharp;
+using System.CodeDom.Compiler;
 
 namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
 {
@@ -38,8 +41,136 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
         }
     }
 
+    public class SalesOrder_DynamicCodeModel
+    {
+        public string code { get; set; }
+        public string BOList { get; set; }
+        public string Connection { get; set; }
+        public string Company { get; set; }
+        public List<object> Parameters { get; set; }
+
+        public SalesOrder_DynamicCodeModel()
+        {
+            Parameters = new List<object>();
+        }
+    }
+
     public class SalesOrderHelperMethods
     {
+        public static async Task<RemoteDataBrokerResponse> SalesOrder_DynamicCode(RemoteDataBrokerRequest rdbRequest)
+        {
+            // Deserialize the request object
+            SalesOrder_DynamicCodeModel request = JsonConvert.DeserializeObject<SalesOrder_DynamicCodeModel>(rdbRequest.Data);
+
+            // Create the response object
+            RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
+
+            string code = request.code;
+
+            var loScript = new wwScripting("CSharp");
+
+            //loScript.AddNamespace("System.IO");
+            loScript.AddAssembly("System.Data.Dll", "System.Data");
+            loScript.AddAssembly("System.Xml.Dll", "System.Xml");
+            loScript.AddAssembly("System.Xml.Linq.Dll", "System.Xml.Linq");
+            loScript.AddAssembly("System.Core.dll");
+            loScript.AddAssembly("System.Data.DataSetExtensions.dll", "System.Data.DataSetExtensions");
+            loScript.AddAssembly("System.Net.Http.dll", "System.Net.Http");
+            loScript.AddAssembly("System.Runtime.Serialization.dll", "System.Runtime.Serialization");
+            loScript.AddAssembly("System.ServiceModel.dll", "System.ServiceModel");
+            loScript.AddNamespace("System.Collections");
+            loScript.AddNamespace("System.Collections.Generic");
+            loScript.cSupportAssemblyPath = @"C:\Program Files (x86)\Bezlio Remote Data Broker\";
+            loScript.AddAssembly(loScript.cSupportAssemblyPath + "Bezlio Plugin Common.dll");
+            loScript.AddAssembly(loScript.cSupportAssemblyPath + "Newtonsoft.Json.dll", "Newtonsoft.Json");
+            loScript.AddAssembly(loScript.cSupportAssemblyPath + "Plugins\\Epicor10.dll");            
+
+            int paramCount = request.Parameters.Count;
+            int originalParamCount = paramCount;
+
+            request.Parameters.Add(response);
+
+            //Establish connections to Epicor
+            foreach (string str in request.Company.Split(','))
+            {
+                object epicorConn = Common.GetEpicorConnection(request.Connection, str, ref response);
+                request.Parameters.Add(epicorConn);
+            }
+
+            //add and create the necessary business objects:
+            foreach (string str in request.BOList.Split(','))
+            {
+                try//just in case the user has provided a BO that is invalid
+                {
+                    if (str.Split(':').Length > 0)
+                    {
+                        for (int i = 0; i < request.Company.Split(',').Length; i++)
+                        {
+                            if (request.Company.Split(',')[i].ToUpper() == str.Split(':')[1].ToUpper())
+                            {
+                                object bo = Common.GetBusinessObject(request.Parameters[paramCount + 1 + i], str.Split(':')[0], ref response);
+
+                                request.Parameters.Add(bo);
+                            }
+                        }
+                    }
+
+                    /*if (str.Trim().Length > 0)
+                    {
+                        
+                        object bo = Common.GetBusinessObject(epicorConn, str, ref response);
+
+                        request.Parameters.Add(bo);
+                    }*/
+                }
+                catch { }
+            }
+
+            //now, add the paramter variables into the code so that they can be used directly without having to be declared by the user
+            code = "bezlio.rdb.RemoteDataBrokerResponse response = Parameters[" + paramCount.ToString() + "] as bezlio.rdb.RemoteDataBrokerResponse;\n" + code;
+            paramCount++;
+            foreach(string str in request.Company.Split(','))
+            {
+                code = "object epicorConn_" + str + " = Parameters[" + paramCount.ToString() + "];\n" + code;
+                paramCount++;
+            }            
+
+            foreach (string str in request.BOList.Split(','))
+            {
+                code = "object " + str.Split(':')[0] + "_" + str.Split(':')[1] + " = Parameters[" + paramCount.ToString() + "];\n" + code;
+                paramCount++;
+            }
+
+            var lcResult = loScript.ExecuteCode(code, request.Parameters.ToArray());
+
+            response.Data = JsonConvert.SerializeObject(lcResult);
+
+            if (loScript.bError)
+            {
+                response.Error = true;
+                response.ErrorText = loScript.cErrorMsg;
+            }
+
+            response.ErrorText = code + "\n\n\n" + response.ErrorText;
+
+            foreach (object v in request.Parameters)
+                response.ErrorText += "\n\n" + v.ToString() + " - " + v.GetType();
+
+            foreach (string str in request.BOList.Split(','))
+                response.ErrorText += "\n\n" + str;
+
+                for (int i = 0; i < request.Company.Split(',').Length; i++)
+            {
+
+                Common.CloseEpicorConnection(request.Parameters[originalParamCount + 1 + i], ref response);
+            }
+                //Common.CloseEpicorConnection(epicorConn, ref response);
+
+            loScript.Dispose();
+
+            return response;
+        }
+
         public static void writeLog(string log)
         {
             /*System.IO.StreamWriter sw = new System.IO.StreamWriter(@"c:\test\logs.txt", true);
@@ -68,7 +199,7 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
                 if (ds.Tables["OrderHed"].Columns.Contains("Company"))
                     if (ds.Tables["OrderHed"].Rows[0]["Company"].ToString().Trim().Length > 0 && !companyList.Contains(ds.Tables["OrderHed"].Rows[0]["Company"] as string))
                         companyList.Add(ds.Tables["OrderHed"].Rows[0]["Company"] as string);
-            }            
+            }                        
 
             if (companyList.Count == 0)
                 companyList.Add(request.Company); //use the default company            
@@ -166,7 +297,6 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
                             //we should now be able to save the sales order
                             bo.GetType().GetMethod("Update").Invoke(bo, new object[] { newOrder });
 
-
                             writeLog("Add Order Details");
                             //now, it is time to add in the Order details
                             foreach (DataRow orderLine in ds.Tables["OrderDtl"].Rows)
@@ -257,7 +387,7 @@ namespace bezlio.rdb.plugins.HelperMethods.SalesOrder
 
                             orderReturn.Order = newOrder;
                             orderReturn.IsError = false;
-                            orderReturn.Errors = "";
+                            orderReturn.Errors = "";                            
                         }
                         catch (Exception ex)
                         {

@@ -20,6 +20,7 @@ namespace bezlio.rdb.plugins
         public GetOpenOrders_Model GetOpenOrdersList { get; set; }
         public GetOrder_Model GetOrderByID { get; set; }
         public GetOrders_Model GetOrdersByID { set; get; }
+        public GetOrderInfo_Model GetOrderInfo { set; get; }
     }
 
     class GetOpenOrders_Model {
@@ -36,10 +37,16 @@ namespace bezlio.rdb.plugins
         public List<string> Orders { set; get; }
     }
 
+    class GetOrderInfo_Model
+    {
+        public int DaysToSearch { set; get; }
+    }
+
     public class Amazon
     {
         static MarketplaceWebServiceOrdersClient ordersClient;
         static MWSRecommendationsSectionServiceClient recommendationClient;
+        static MarketplaceWebService.MarketplaceWebServiceClient reportClient;
         static string sellerId;
         static string mwsAuthToken;
         static string marketplaceId;
@@ -63,6 +70,11 @@ namespace bezlio.rdb.plugins
             model.GetOrdersByID = new GetOrders_Model
             {
                 Orders = new List<string>()
+            };
+
+            model.GetOrderInfo = new GetOrderInfo_Model
+            {
+                DaysToSearch = 7
             };
 
             return model;
@@ -103,8 +115,14 @@ namespace bezlio.rdb.plugins
                 ServiceURL = serviceUrl
             };
 
+            MarketplaceWebService.MarketplaceWebServiceConfig reportConfig = new MarketplaceWebService.MarketplaceWebServiceConfig()
+            {
+                ServiceURL = serviceUrl
+            };
+
             ordersClient = new MarketplaceWebServiceOrdersClient(accessKey, secretKey, appName, appVersion, ordersConfig);
             recommendationClient = new MWSRecommendationsSectionServiceClient(accessKey, secretKey, appName, appVersion, recommendationConfig);
+            reportClient = new MarketplaceWebService.MarketplaceWebServiceClient(accessKey, secretKey, appName, appVersion, reportConfig);            
         }
 
         public static RemoteDataBrokerResponse GetResponseObject(string requestId, bool compress) {
@@ -154,7 +172,32 @@ namespace bezlio.rdb.plugins
                 ordersRequest.CreatedAfter = request.createdAfter;
                 ordersRequest.OrderStatus = request.orderStatus.Split(',').ToList();                
 
-                var data = ordersClient.ListOrders(ordersRequest);                
+                var data = ordersClient.ListOrders(ordersRequest);
+
+                if(data.ListOrdersResult.NextToken != null && data.ListOrdersResult.NextToken != "")
+                {
+                    string nextToken = data.ListOrdersResult.NextToken;
+
+                    while(nextToken != null && nextToken.Length > 0)
+                    {
+                        //wait for 10 seconds so that we don't hit the throttle limit
+                        System.Threading.Thread.Sleep(10000);
+                        ListOrdersByNextTokenRequest tokenRequest = new ListOrdersByNextTokenRequest();
+                        tokenRequest.SellerId = sellerId;
+                        tokenRequest.MWSAuthToken = mwsAuthToken;
+                        tokenRequest.NextToken = nextToken;
+
+                        var newData = ordersClient.ListOrdersByNextToken(tokenRequest);
+
+                        nextToken = newData.ListOrdersByNextTokenResult.NextToken;
+
+                        foreach (var order in newData.ListOrdersByNextTokenResult.Orders)                        
+                            data.ListOrdersResult.Orders.Add(order);
+                        
+                    }
+                }
+
+                
 
                     response.Data = JsonConvert.SerializeObject(data);
             }
@@ -166,6 +209,116 @@ namespace bezlio.rdb.plugins
                 response.ErrorText = ex.Message;
             }
 
+            return response;
+        }
+
+        public static async Task<RemoteDataBrokerResponse> GetOrderInfo(RemoteDataBrokerRequest rdbRequest)
+        {
+            RemoteDataBrokerResponse response = GetResponseObject(rdbRequest.RequestId, true);
+
+            GetOrderInfo_Model request = JsonConvert.DeserializeObject<GetOrderInfo_Model>(rdbRequest.Data);
+
+            try
+            {
+                MarketplaceWebService.Model.RequestReportRequest reportRequest = new MarketplaceWebService.Model.RequestReportRequest();
+                reportRequest.ReportType = "_GET_FLAT_FILE_ALL_ORDERS_DATA_BY_ORDER_DATE_";
+                reportRequest.Merchant = sellerId;
+
+                if (request.DaysToSearch > 30)
+                    request.DaysToSearch = 30;
+                else if (request.DaysToSearch < 1)
+                    request.DaysToSearch = 1;
+
+                DateTime startDate = DateTime.Now.AddDays(-1 * request.DaysToSearch);
+
+                reportRequest.StartDate = startDate;
+                reportRequest.MWSAuthToken = mwsAuthToken;
+
+                MarketplaceWebService.Model.IdList idList = new MarketplaceWebService.Model.IdList();
+                idList.Id.Add(marketplaceId);
+
+                reportRequest.MarketplaceIdList = idList;
+
+                List<object> data = new List<object>();
+
+                data.Add(reportRequest);
+
+                //that should be everything that is needed for the report, so submit it
+                var reportRequestResponse = reportClient.RequestReport(reportRequest);
+
+                data.Add(reportRequestResponse);
+
+                //now that the report has been submitted, wait 10 seconds before doing our next call
+                System.Threading.Thread.Sleep(10000);
+
+                //next, we need to do a Request Report Request List
+                MarketplaceWebService.Model.GetReportRequestListRequest getReportListRequest = new MarketplaceWebService.Model.GetReportRequestListRequest();
+                getReportListRequest.ReportRequestIdList = new MarketplaceWebService.Model.IdList();
+                getReportListRequest.ReportRequestIdList.Id.Add(reportRequestResponse.RequestReportResult.ReportRequestInfo.ReportRequestId);
+                getReportListRequest.MWSAuthToken = mwsAuthToken;
+                getReportListRequest.Merchant = sellerId;
+                data.Add(getReportListRequest);
+                //now see on what it returns
+                var getReportListResponse = reportClient.GetReportRequestList(getReportListRequest);
+
+                data.Add(getReportListResponse);
+
+                //we'll try three times to get the data
+                int i = 0;
+
+                while (i < 3)
+                {
+                    if (getReportListResponse.GetReportRequestListResult != null && getReportListResponse.GetReportRequestListResult.ReportRequestInfo[0].ReportProcessingStatus == "_DONE_")
+                    {
+                        i = 3;
+
+                        try
+                        {//we should have the report ID now, we just need to get it                            
+                            MarketplaceWebService.Model.GetReportRequest getReportRequest = new MarketplaceWebService.Model.GetReportRequest();
+                            getReportRequest.ReportId = getReportListResponse.GetReportRequestListResult.ReportRequestInfo[0].GeneratedReportId;
+                            getReportRequest.Merchant = sellerId;
+                            getReportRequest.MWSAuthToken = mwsAuthToken;
+                            string fileName = System.IO.Path.GetTempPath() + Guid.NewGuid().ToString() + ".csv";
+                            getReportRequest.Report = File.Open(fileName, FileMode.CreateNew, FileAccess.ReadWrite);
+
+                            //just submit the request to get the report
+                            data.Add("submitting Report: " + fileName);
+                            var theReport = reportClient.GetReport(getReportRequest);
+
+                            data.Add(theReport);
+                        }
+                        catch (Exception ex)
+                        {
+                            data.Add(ex);
+                        }
+
+                        //response.Data = JsonConvert.SerializeObject(theReport.GetReportResult);
+                    }
+                    else
+                    {
+                        System.Threading.Thread.Sleep(10000); //report is not yet done, wait for another 5 seconds
+
+                        //try submission again
+                        getReportListRequest = new MarketplaceWebService.Model.GetReportRequestListRequest();
+                        getReportListRequest.ReportRequestIdList = new MarketplaceWebService.Model.IdList();
+                        getReportListRequest.ReportRequestIdList.Id.Add(reportRequestResponse.RequestReportResult.ReportRequestInfo.ReportRequestId);
+                        getReportListRequest.MWSAuthToken = mwsAuthToken;
+                        getReportListRequest.Merchant = sellerId;
+
+                        data.Add(getReportListRequest);
+                        //get the return
+                        getReportListResponse = reportClient.GetReportRequestList(getReportListRequest);
+                        data.Add(getReportListResponse);
+                    }
+                    i++;
+                }
+
+                response.Data = JsonConvert.SerializeObject(data);
+            }
+            catch(Exception ex)
+            {
+                response.Data = JsonConvert.SerializeObject(ex);
+            }
             return response;
         }
 

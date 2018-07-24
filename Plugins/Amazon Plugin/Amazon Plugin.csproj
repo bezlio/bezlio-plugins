@@ -48,15 +48,12 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ABrain.AmazonMWS, Version=0.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\ABrain.AmazonMWS.1.0.7\lib\ABrain.AmazonMWS.dll</HintPath>
+    </Reference>
     <Reference Include="MWSClientCsRuntime-1.0, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\Downloads\MWSProductsCSharpClientLibrary-2011-10-01._CB531003268_\dist\MWSClientCsRuntime-1.0.dll</HintPath>
-    </Reference>
-    <Reference Include="MWSOrders_2013-09-01_v2018-01-31">
-      <HintPath>..\..\..\..\..\Downloads\MWSProductsCSharpClientLibrary-2011-10-01._CB531003268_\MWSOrders_2013-09-01_v2018-01-31.dll</HintPath>
-    </Reference>
-    <Reference Include="MWSRecommendations_2013-04-01_v2015-06-18">
-      <HintPath>..\..\..\..\..\Downloads\MWSProductsCSharpClientLibrary-2011-10-01._CB531003268_\MWSRecommendations_2013-04-01_v2015-06-18.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -92,6 +89,7 @@
     <None Include="app.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

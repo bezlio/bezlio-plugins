@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Xml.Linq;
 using System.Reflection;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace bezlio.rdb.plugins
 {
@@ -21,6 +22,19 @@ namespace bezlio.rdb.plugins
         public SQLServerDataModel()
         {
             Parameters = new List<KeyValuePair<string, string>>();
+        }
+    }    
+
+    public class SQLServerDynamicQueryDataModel
+    {
+        public string Connection { get; set; }
+        public List<KeyValuePair<string, string>> Parameters { get; set; }
+        public List<KeyValuePair<string, string>> Queries { get; set; }
+
+        public SQLServerDynamicQueryDataModel()
+        {
+            this.Parameters = new List<KeyValuePair<string, string>>();
+            this.Queries = new List<KeyValuePair<string, string>>();
         }
     }
 
@@ -140,6 +154,99 @@ namespace bezlio.rdb.plugins
             return result;
         }
 
+        public static async Task<RemoteDataBrokerResponse> ExecuteDynamicQuery(RemoteDataBrokerRequest rdbRequest)
+        {
+            //WriteDebugLog("Running ExecuteQuery");
+
+            // Cast the body to the strong type (note: I would prefer to just make the argument of 
+            // the type RemoteDataBrokerRequest right off the bat but more work needs to be done to
+            // cast the input as that reflected type before we can do that.
+            // TODO: Switch argument to plugin methods to RemoteDataBrokerRequest
+            //RemoteDataBrokerRequest request = JsonConvert.DeserializeObject<RemoteDataBrokerRequest>(requestJson);
+            SQLServerDynamicQueryDataModel request = JsonConvert.DeserializeObject<SQLServerDynamicQueryDataModel>(rdbRequest.Data);
+
+            // Declare the response object
+            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+            response.Compress = rdbRequest.Compress;
+            response.RequestId = rdbRequest.RequestId;
+            response.DataType = "applicationJSON";
+
+            if (!allowDynamicQuery())
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": Dynamic query execution not currently allowed. Please contact your Bezlio administrator for more information.";
+
+                return response;
+            }
+
+            try
+            {
+                List<string> tableNames = new List<string>();
+
+                //List<SqlFileLocation> locations = getFileLocations();
+                List<SqlConnectionInfo> connections = getSqlConnections();                                
+
+                // Locate the connection entry specified
+                if (connections.Where((c) => c.ConnectionName.Equals(request.Connection)).Count() == 0)
+                {
+                    response.Error = true;
+                    response.ErrorText = "Could not locate a connection in the plugin config file with the name " + request.Connection;
+                    return response;
+                }
+                SqlConnectionInfo connection = connections.Where((c) => c.ConnectionName.Equals(request.Connection)).FirstOrDefault();
+
+                // Now obtain a SQL connection
+                object sqlConn = getConnection("SQL Server"
+                            , connection.ServerAddress
+                            , connection.DatabaseName
+                            , connection.UserName
+                            , connection.Password);
+
+                //create the sql text
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+                //go through and combine the queries
+                foreach (var query in request.Queries)
+                    sb.Append(query.Value).Append(";");
+
+                DataSet results = await executeQuery(sqlConn, sb.ToString(), request.Parameters, false);
+
+                //ensure that the results are the same between the two
+                if(results.Tables.Count == request.Queries.Count)
+                {
+                    for(int i = 0; i < results.Tables.Count; i++)
+                    {
+                        if (request.Queries[i].Key == "")
+                            results.Tables[i].TableName = "TableName" + i.ToString();
+                        else
+                            results.Tables[i].TableName = request.Queries[i].Key;
+                    }
+                }
+
+                if (results.Tables.Count == 1)
+                {
+                    DataTable dt = results.Tables[0].Copy();
+                    dt.TableName = "";
+                    response.Data = JsonConvert.SerializeObject(dt);
+                }
+                else if (results.Tables.Count > 1)
+                {
+                    response.Data = JsonConvert.SerializeObject(results);
+                }
+                else
+                    response.Data = JsonConvert.SerializeObject(request.Connection = sb.ToString());
+
+            }
+            catch (Exception ex)
+            {
+                response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+            }
+
+            // Return our response
+            return response;
+        }
+
         public static async Task<RemoteDataBrokerResponse> ExecuteQuery(RemoteDataBrokerRequest rdbRequest)
         {
             //WriteDebugLog("Running ExecuteQuery");
@@ -184,9 +291,8 @@ namespace bezlio.rdb.plugins
                 SqlConnectionInfo connection = connections.Where((c) => c.ConnectionName.Equals(request.Connection)).FirstOrDefault();
 
                 // Perform any replacements on passed variables
-                if (request.Parameters != null && request.Parameters.Count > 0) {
-                    FillQueryParameters(ref sql, request.Parameters);
-                }
+                if (request.Parameters != null && request.Parameters.Count > 0)                
+                    request.Parameters = FillQueryParameters(ref sql, request.Parameters);                                   
 
                 // Now obtain a SQL connection
                 object sqlConn = getConnection("SQL Server"
@@ -197,12 +303,32 @@ namespace bezlio.rdb.plugins
 
                 //WriteDebugLog("Connection Received");
 
-                DataTable dtResponse = await executeQuery(sqlConn, sql, null);
+                DataSet dsResults = await executeQuery(sqlConn, sql, request.Parameters, false); ;
+
+                //DataTable dtResponse = await executeQuery(sqlConn, sql, request.Parameters, false);
 
                 //WriteDebugLog("Query Executed");
 
+                int tableIndex = 1;
+
+                foreach (DataTable dt in dsResults.Tables)
+                {
+                    dt.TableName = "TableName" + tableIndex.ToString();
+
+                    tableIndex++;
+                }
+
+
                 // Return the data table
-                response.Data = JsonConvert.SerializeObject(dtResponse);
+                if (dsResults.Tables.Count == 1)
+                {
+                    DataTable dt = dsResults.Tables[0].Copy();
+                    dt.TableName = "";
+
+                    response.Data = JsonConvert.SerializeObject(dt);
+                }
+                else
+                    response.Data = JsonConvert.SerializeObject(dsResults);
 
                 //WriteDebugLog("Response created");
 
@@ -217,6 +343,7 @@ namespace bezlio.rdb.plugins
             // Return our response
             return response;        
         }
+
         public static async Task<RemoteDataBrokerResponse> ExecuteNonQuery(RemoteDataBrokerRequest rdbRequest)
         {
             //WriteDebugLog("Running ExecuteQuery");
@@ -256,10 +383,9 @@ namespace bezlio.rdb.plugins
 
                 //WriteDebugLog("Connection Created");
 
-                // Perform any replacements on passed variables
-                if (request.Parameters != null && request.Parameters.Count > 0) {
-                    FillQueryParameters(ref sql, request.Parameters);
-                }
+                // Perform any replacements on passed variables, this also includes replacing the parameter values themselves, if required
+                if (request.Parameters != null && request.Parameters.Count > 0)
+                    request.Parameters = FillQueryParameters(ref sql, request.Parameters);
                 
                 // Now obtain a SQL connection
                 object sqlConn = getConnection("SQL Server"
@@ -314,8 +440,32 @@ namespace bezlio.rdb.plugins
                             , connection.UserName
                             , connection.Password);
 
-                DataTable dtResponse = await executeQuery(sqlConn, sql, request.Parameters);
-                response.Data = JsonConvert.SerializeObject(dtResponse);
+                DataSet dsResults = await executeQuery(sqlConn, sql, request.Parameters, true); ;
+
+                //DataTable dtResponse = await executeQuery(sqlConn, sql, request.Parameters, false);
+
+                //WriteDebugLog("Query Executed");
+
+                int tableIndex = 1;
+
+                foreach (DataTable dt in dsResults.Tables)
+                {
+                    dt.TableName = "TableName" + tableIndex.ToString();
+
+                    tableIndex++;
+                }
+
+
+                // Return the data table
+                if (dsResults.Tables.Count == 1)
+                {
+                    DataTable dt = dsResults.Tables[0].Copy();
+                    dt.TableName = "";
+
+                    response.Data = JsonConvert.SerializeObject(dt);
+                }
+                else
+                    response.Data = JsonConvert.SerializeObject(dsResults);
 
                 sqlConn = null;
             }
@@ -400,6 +550,29 @@ namespace bezlio.rdb.plugins
             return JsonConvert.DeserializeObject<List<SqlFileLocation>>(strLocations);
         }
 
+        private static bool allowDynamicQuery()
+        {
+            string cfgPath = getCfgPath();
+
+            bool retValue = false;
+
+            if (File.Exists(cfgPath))
+            {
+                // Load in the cfg file
+                XDocument xConfig = XDocument.Load(cfgPath);
+
+                // Get the settings for the error log destination
+                XElement xConnections = xConfig.Descendants("bezlio.plugins.Properties.Settings").Descendants("setting").Where(a => (string)a.Attribute("name") == "allowDynamicQueries").FirstOrDefault();
+                if (xConnections != null)
+                {
+                    if (xConnections.Value.ToLower() == "true")
+                        retValue = true;
+                }
+            }
+
+            return retValue;
+        }
+
         private static List<SqlConnectionInfo> getSqlConnections()
         {
             string strConnections = "";
@@ -481,13 +654,16 @@ namespace bezlio.rdb.plugins
             return oAdapter;
         }
 
-        #pragma warning disable 1998
-        private async static Task<DataTable> executeQuery(object _connection,
-                                    string _sql, List<KeyValuePair<string, string>> spParams)
+#pragma warning disable 1998
+        private async static Task<DataSet> executeQuery(object _connection,
+                                    string _sql, List<KeyValuePair<string, string>> spParams, bool storedProcedure)
         {
             // TODO: Make this actually async
             object oCommand;
             object oAdapter;
+            DataSet ds = new DataSet();
+            ds.DataSetName = "QueryExecution";
+
             DataTable dt = new DataTable("TableName");
 
             switch (_connection.GetType().Name.ToString())
@@ -497,15 +673,15 @@ namespace bezlio.rdb.plugins
                     SqlCommand command = (SqlCommand)oCommand;
 
                     using (command.Connection = (SqlConnection)_connection) {
-                        if (spParams != null && spParams.Count > 0)
-                        {
+                        if (storedProcedure)                        
                             command.CommandType = CommandType.StoredProcedure;
+
+                        if(spParams != null && spParams.Count > 0)
                             FillSPParameters(ref command, spParams);
-                        }
 
                         command.CommandText = _sql;
                         oAdapter = getAdapter("SQL Server", oCommand);                  
-                        ((SqlDataAdapter)oAdapter).Fill(dt);
+                        ((SqlDataAdapter)oAdapter).Fill(ds);
                         //((SqlCommand)oCommand).Connection.Close();
                     }
                     //((SqlCommand)oCommand).Connection = (SqlConnection)_connection;
@@ -515,7 +691,7 @@ namespace bezlio.rdb.plugins
 
             oCommand = null;
             oAdapter = null;
-            return dt;
+            return ds;
         }
 
         private async static Task<int> executeNonQuery(object _connection,
@@ -549,29 +725,56 @@ namespace bezlio.rdb.plugins
             oCommand = null;
             return intRowsAffected;
         }
-        private static void FillQueryParameters(ref string query, List<KeyValuePair<string, string>> parameters)
+        private static List<KeyValuePair<string, string>> FillQueryParameters(ref string query, List<KeyValuePair<string, string>> parameters)
         {
-            foreach (var parameter in parameters)
+            List<KeyValuePair<string, string>> newParams = new List<KeyValuePair<string, string>>();
+
+            //using regex against original query to find parameters that are in the old format
+            MatchCollection mc = Regex.Matches(query, "(['%]{0,}\\{)(.*?)(\\}['%]{0,})");
+            
+            foreach(Match m in mc)
             {
-                query = query.Replace('{' + parameter.Key + '}', parameter.Value.ToString().Replace("'", "''"));
+                //group 2 contains the actual name of the parameter
+                var param = (from v in parameters where v.Key == m.Groups[2].Value select v).FirstOrDefault();
+
+                //if a value is found, replace the found parameter with the true parameter name in the query
+                if (param.Key != null && param.Key.Length > 0)
+                {
+                    query = query.Replace(m.Value, "@" + param.Key);
+
+                    if (m.Groups[1].Value.IndexOf('%') > -1)
+                        param = new KeyValuePair<string, string>(param.Key, "%" + param.Value);
+
+                    if (m.Groups[3].Value.IndexOf('%') > -1)
+                        param = new KeyValuePair<string, string>(param.Key, param.Value + "%");
+
+                    newParams.Add(param);
+                }
             }
+
+            return newParams;
         }
 
         private static void FillSPParameters(ref SqlCommand command, List<KeyValuePair<string, string>> parameters)
         {
             foreach (var parameter in parameters)
             {
+                string useKey = parameter.Key;
+
+                if (!parameter.Key.StartsWith("@")) //if the parameter name doesn't contain the "@" symbol, we will convert it to the proper parameter type
+                    useKey = "@" + parameter.Key;
+
                 string value = parameter.Value.ToString().Replace("'", "''");
                 double number;
                 SqlParameter param;
 
                 if (!(value.StartsWith("\"") && value.EndsWith("\"")) && double.TryParse(value, out number))
                 {
-                    param = new SqlParameter(parameter.Key, number);
+                    param = new SqlParameter(useKey, number);
                     param.DbType = DbType.Double;
                 } else
                 {
-                    param = new SqlParameter(parameter.Key, value);
+                    param = new SqlParameter(useKey, value);
                     param.DbType = DbType.String;
                 }            
 
