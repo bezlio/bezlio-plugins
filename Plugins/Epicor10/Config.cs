@@ -46,7 +46,7 @@ namespace bezlio.rdb.plugins
             } catch (Exception ex)
             {
                 response.Error = true;
-                response.ErrorText = ex.Message;
+                response.ErrorText = ex.ToString();
                 return null;
             }
         }
@@ -77,7 +77,7 @@ namespace bezlio.rdb.plugins
             catch (Exception ex)
             {
                 response.Error = true;
-                response.ErrorText = ex.Message;
+                response.ErrorText = ex.ToString();
                 return null;
             }
         }
