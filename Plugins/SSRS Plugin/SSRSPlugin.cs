@@ -15,10 +15,14 @@ using ReportService;
 namespace bezlio.rdb.plugins
 {
     //model used to deserialize incoming request
-    class SSRSDataModel
+    class SSRSDataModel_ReportList
     {
         public string FolderName { get; set; }
-        public string ReportName { get; set; }
+    }
+
+    class SSRSDataModel_Report
+    {
+
     }
 
     //main class, crux of work done here
@@ -67,7 +71,7 @@ namespace bezlio.rdb.plugins
         public static string GetFolderNames()
         {
             string result = "[";
-            foreach (var rpt in ssrsSvc.ListChildren("/reports", true))
+            foreach (var rpt in ssrsSvc.ListChildren("/", true))
             {
                 if (rpt.TypeName == "Folder")
                 {
@@ -91,11 +95,8 @@ namespace bezlio.rdb.plugins
             try
             {
                 List<dynamic> result = new List<dynamic>();
-                if(request.FolderName.IndexOf("/reports") == -1)
-                {
-                    request.FolderName = "/reports/" + request.FolderName;
-                }
-                foreach (var rpt in ssrsSvc.ListChildren(request.FolderName, true))
+                string pathName = ssrsSvc.ListChildren("/", true).Where(folder => folder.TypeName == "Folder" && folder.Name == request.FolderName).FirstOrDefault().Path;
+                foreach (var rpt in ssrsSvc.ListChildren(pathName, true))
                 {
                     result.Add(new
                     {
