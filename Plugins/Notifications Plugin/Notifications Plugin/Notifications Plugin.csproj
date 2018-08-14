@@ -73,12 +73,9 @@
       <Project>{89966888-91FD-40F9-824C-F8B87B0207FD}</Project>
       <Name>Bezlio Plugin Common</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\REST Plugin\REST Plugin.csproj">
-      <Project>{CAD3196C-749D-44E7-A42C-62960AF179C7}</Project>
-      <Name>REST Plugin</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
