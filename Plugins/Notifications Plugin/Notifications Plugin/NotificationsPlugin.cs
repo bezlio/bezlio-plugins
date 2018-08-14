@@ -1,15 +1,9 @@
-﻿using bezlio.rdb;
-using bezlio.rdb.plugins;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using RestSharp;
-using RestSharp.Authenticators;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -42,36 +36,53 @@ namespace bezlio.rdb.plugins
             model.Body = "Notification Body";
             return model; 
         }
-        public static object sendNotification(RemoteDataBrokerRequest rdbRequest)
+        public static async Task<RemoteDataBrokerResponse> sendNotification(RemoteDataBrokerRequest rdbRequest)
         {
-            var request = JsonConvert.DeserializeObject<dynamic>(rdbRequest.Data);
-
-            // Declare the response object
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = rdbRequest.Compress;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
-
-            var client = new RestClient("https://bezlio-notifications-3.azurewebsites.net/send");
-            RestRequest restRequest = new RestRequest();
-            restRequest.Method = Method.GET;
-
-            // Check to see if we need to add a body
-            if (request != null && request.Body != "")
+            var test = new { Recipient = "", Title = "", Body = "" };
+            try
             {
-                restRequest.AddParameter("recpient", request.Body.Recpient);
-                restRequest.AddParameter("title", request.Body.Title);
-                restRequest.AddParameter("body", request.Body.Body);
+                var request = JsonConvert.DeserializeAnonymousType(rdbRequest.Data, test);
+
+                // Declare the response object
+                RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+                response.Compress = rdbRequest.Compress;
+                response.RequestId = rdbRequest.RequestId;
+                response.DataType = "applicationJSON";
+
+                var client = new RestClient("https://bezlio-notifications-3.azurewebsites.net/send");
+                RestRequest restRequest = new RestRequest();
+                restRequest.Method = Method.GET;
+
+                // Check to see if we need to add a body
+                if (request != null && request.Body != "")
+                {
+                    restRequest.AddParameter("recipient", request.Recipient);
+                    restRequest.AddParameter("title", request.Title);
+                    restRequest.AddParameter("body", request.Body);
+                }
+
+                restRequest.AddParameter("key", GetLocations().permaToken);
+
+                // Execute
+                IRestResponse resp = client.Execute(restRequest);
+
+                response.Data = resp.Content;
+
+                return response;
             }
+            catch(Exception e)
+            {
+                var request = JsonConvert.DeserializeAnonymousType(rdbRequest.Data, test);
+                var response = new RemoteDataBrokerResponse();
+                response.Compress = rdbRequest.Compress;
+                response.RequestId = rdbRequest.RequestId;
+                response.DataType = "applicationJSON";
 
-            restRequest.AddParameter("key", GetLocations().permaToken);
+                response.Data =JsonConvert.SerializeObject(request);
 
-            // Execute
-            IRestResponse resp = client.Execute(restRequest);
+                return response; 
 
-            response.Data = resp.Content;
-
-            return response;
+            }
         }
         private static SqlFileLocation GetLocations()
         {
