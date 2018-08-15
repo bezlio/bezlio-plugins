@@ -3,6 +3,7 @@ using RestSharp;
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -11,7 +12,7 @@ namespace bezlio.rdb.plugins
 {
     public class NotificationsModel
     {
-        public string Recpient { get; set; }
+        public string Recipient { get; set; }
         public string Title { get; set; }
         public string Body { get; set; }
     }
@@ -21,7 +22,7 @@ namespace bezlio.rdb.plugins
     {
         public SqlFileLocation() { }
 
-        public string permaToken { get; set; }
+        public string permaLinkToken { get; set; }
     }
 
 
@@ -31,17 +32,18 @@ namespace bezlio.rdb.plugins
         {
 
             NotificationsModel model = new NotificationsModel();
-            model.Recpient = "Who gets the notification";
+            model.Recipient = "Who gets the notification";
             model.Title = "Notification Title";
             model.Body = "Notification Body";
             return model; 
         }
         public static async Task<RemoteDataBrokerResponse> sendNotification(RemoteDataBrokerRequest rdbRequest)
         {
-            var test = new { Recipient = "", Title = "", Body = "" };
             try
             {
-                var request = JsonConvert.DeserializeAnonymousType(rdbRequest.Data, test);
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+
+                var request = JsonConvert.DeserializeObject<dynamic>(rdbRequest.Data);
 
                 // Declare the response object
                 RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
@@ -61,7 +63,7 @@ namespace bezlio.rdb.plugins
                     restRequest.AddParameter("body", request.Body);
                 }
 
-                restRequest.AddParameter("key", GetLocations().permaToken);
+                restRequest.AddParameter("key", "eyJhbGciOiJQQkVTMi1IUzUxMitBMjU2S1ciLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwic3ViIjoibXN2cmF5OTYrYmV6bGlvQGdtYWlsLmNvbSIsImV4cCI6MCwicDJjIjo4MTkyLCJwMnMiOiJzNm1yRWdmN2F0OGVpWTRyIn0.DxA_jovgBcrjcwPjw06hQhUggZNDuvXxJgTMNhWNDLpZCbUXxZqmjTb_csXMXjzszwXfd8pGSZO10kzJkCpJ33rLplXEm-ux.gnKofD-D-7JM5VB_LtmasQ.3iR6Op63jcALHVN4_l2HwXzwLrDT5TgTGZ_er4fW_-iUvnqx-cwIUcFLao2NvhPAbC4MGyWSZjbwQqSFc6Fl8rttyt1WKApBn30Wl3QpwEXcqYQJ2lP_Sl1t4UUI6OxRsCmpWJAcFzVxSxTjbx_UM7AEiZ8SW5gEUpbrJ1PXjulWmV4fydXetK0lz0zA7v06.cWEd5sDEgLjAVFg1GDJODT24Msy2K54ezm84_6X_wGE");
 
                 // Execute
                 IRestResponse resp = client.Execute(restRequest);
@@ -70,15 +72,14 @@ namespace bezlio.rdb.plugins
 
                 return response;
             }
-            catch(Exception e)
+            catch(Exception ex)
             {
-                var request = JsonConvert.DeserializeAnonymousType(rdbRequest.Data, test);
-                var response = new RemoteDataBrokerResponse();
-                response.Compress = rdbRequest.Compress;
-                response.RequestId = rdbRequest.RequestId;
-                response.DataType = "applicationJSON";
-
-                response.Data =JsonConvert.SerializeObject(request);
+                var response = new RemoteDataBrokerResponse(); response.Error = true;
+                response.ErrorText = Environment.MachineName + ": " + ex.Message;
+                if (ex.InnerException != null)
+                {
+                    response.ErrorText += " " + ex.InnerException.Message;
+                }
 
                 return response; 
 
