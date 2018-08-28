@@ -7,8 +7,8 @@
     <ProjectGuid>{3DCB70F2-F879-4DE3-9822-915840AEED25}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Notifications_Plugin</RootNamespace>
-    <AssemblyName>Notifications Plugin</AssemblyName>
+    <RootNamespace>Notifications</RootNamespace>
+    <AssemblyName>Notifications</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
