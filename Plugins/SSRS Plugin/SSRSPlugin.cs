@@ -15,14 +15,17 @@ using ReportService;
 namespace bezlio.rdb.plugins
 {
     //model used to deserialize incoming request
-    class SSRSDataModel_ReportList
-    {
+    class SSRSDataModel_ListModel {
+        public SSRSDataModel_ReportList GetReportList { get; set; }
+        public SSRSDataModel_Report ReturnAsPDF { get; set; }
+    }
+
+    class SSRSDataModel_ReportList {
         public string FolderName { get; set; }
     }
 
-    class SSRSDataModel_Report
-    {
-
+    class SSRSDataModel_Report {
+        public string ReportPath { get; set; }
     }
 
     //main class, crux of work done here
@@ -37,11 +40,16 @@ namespace bezlio.rdb.plugins
             Authenticate();
         }
 
-        public static object GetArgs()
-        {
-            SSRSDataModel model = new SSRSDataModel();
-            model.FolderName = GetFolderNames();
-            model.ReportName = "The report filename to run.";
+        public static object GetArgs() {
+            SSRSDataModel_ListModel model = new SSRSDataModel_ListModel();
+
+            model.GetReportList = new SSRSDataModel_ReportList {
+                FolderName = GetFolderNames()
+            };
+
+            model.ReturnAsPDF = new SSRSDataModel_Report {
+                ReportPath = "Path to your report"
+            };
 
             return model;
         }
@@ -85,7 +93,7 @@ namespace bezlio.rdb.plugins
 
         public static async Task<RemoteDataBrokerResponse> GetReportList(RemoteDataBrokerRequest rdbRequest)
         {
-            SSRSDataModel request = JsonConvert.DeserializeObject<SSRSDataModel>(rdbRequest.Data);
+            SSRSDataModel_ReportList request = JsonConvert.DeserializeObject<SSRSDataModel_ReportList>(rdbRequest.Data);
 
             RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
             response.RequestId = rdbRequest.RequestId;
@@ -96,13 +104,15 @@ namespace bezlio.rdb.plugins
             {
                 List<dynamic> result = new List<dynamic>();
                 string pathName = ssrsSvc.ListChildren("/", true).Where(folder => folder.TypeName == "Folder" && folder.Name == request.FolderName).FirstOrDefault().Path;
-                foreach (var rpt in ssrsSvc.ListChildren(pathName, true))
+                foreach (var rpt in ssrsSvc.ListChildren(pathName, false))
                 {
-                    result.Add(new
-                    {
-                        Name = rpt.Name,
-                        Type = rpt.TypeName
-                    });
+                    if (rpt.TypeName == "Report") {
+                        result.Add(new {
+                            Name = rpt.Name,
+                            Type = rpt.TypeName,
+                            Folder = rpt.Path
+                        });
+                    }
                 }
 
                 response.Data = JsonConvert.SerializeObject(result);
@@ -119,36 +129,36 @@ namespace bezlio.rdb.plugins
             return response;
         }
 
-        public static async Task<RemoteDataBrokerResponse> GetReportParameters(RemoteDataBrokerRequest rdbRequest)
-        {
-            SSRSDataModel request = JsonConvert.DeserializeObject<SSRSDataModel>(rdbRequest.Data);
+        //public static async Task<RemoteDataBrokerResponse> GetReportParameters(RemoteDataBrokerRequest rdbRequest)
+        //{
+        //    SSRSDataModel_Report request = JsonConvert.DeserializeObject<SSRSDataModel_Report>(rdbRequest.Data);
 
-            RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
-            response.Compress = true;
-            response.RequestId = rdbRequest.RequestId;
-            response.DataType = "applicationJSON";
+        //    RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
+        //    response.Compress = true;
+        //    response.RequestId = rdbRequest.RequestId;
+        //    response.DataType = "applicationJSON";
 
-            try
-            {
-                SSRSReport ssrs = new SSRSReport();
+        //    try
+        //    {
+        //        SSRSReport ssrs = new SSRSReport();
 
-                response.Data = JsonConvert.SerializeObject(ssrs.GetParameters(request.FolderName, request.ReportName));
-            }
-            catch (Exception ex)
-            {
-                if (!String.IsNullOrEmpty(ex.Message))
-                    response.ErrorText += ex.InnerException;
+        //        response.Data = JsonConvert.SerializeObject(ssrs.GetParameters(request.ReportPath, request.ReportName));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        if (!String.IsNullOrEmpty(ex.Message))
+        //            response.ErrorText += ex.InnerException;
 
-                response.Error = true;
-                response.ErrorText += ex.Message;
-            }
+        //        response.Error = true;
+        //        response.ErrorText += ex.Message;
+        //    }
 
-            return response;
-        }
+        //    return response;
+        //}
 
         public static async Task<RemoteDataBrokerResponse> ReturnAsPDF(RemoteDataBrokerRequest rdbRequest)
         {
-            SSRSDataModel request = JsonConvert.DeserializeObject<SSRSDataModel>(rdbRequest.Data);
+            SSRSDataModel_Report request = JsonConvert.DeserializeObject<SSRSDataModel_Report>(rdbRequest.Data);
 
             RemoteDataBrokerResponse response = new RemoteDataBrokerResponse();
             response.Compress = true;
@@ -159,7 +169,7 @@ namespace bezlio.rdb.plugins
             {
                 SSRSReport ssrs = new SSRSReport();
 
-                response.Data = JsonConvert.SerializeObject(ssrs.GetAsPDF(request.FolderName, request.ReportName));
+                response.Data = JsonConvert.SerializeObject(ssrs.GetAsPDF(request.ReportPath));
             }
             catch (Exception ex)
             {
