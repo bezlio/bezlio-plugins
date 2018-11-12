@@ -6,10 +6,22 @@
       <Value Profile="(Default)">
                   [
                   {
-                  'connectionName': 'Epicor 10 AE',
-                  'appServerUrl': 'net.tcp://DEV-EPICOR10/ERP100700_AE',
-                  'userName': 'manager',
-                  'password': 'manager'
+                  'connectionName': 'Production',
+                  'appServerUrl': 'net.tcp://YOUR_APP_SERVER_NAME/YOUR_INSTANCE',
+                  'userName': 'YOUR_EPICOR_LOGIN',
+                  'password': 'YOUR_EPICOR_PASSWORD'
+                  },
+                  {
+                  'connectionName': 'Test',
+                  'appServerUrl': 'net.tcp://YOUR_APP_SERVER_NAME/YOUR_INSTANCE',
+                  'userName': 'YOUR_EPICOR_LOGIN',
+                  'password': 'YOUR_EPICOR_PASSWORD'
+                  },
+                  {
+                  'connectionName': 'Training',
+                  'appServerUrl': 'net.tcp://YOUR_APP_SERVER_NAME/YOUR_INSTANCE',
+                  'userName': 'YOUR_EPICOR_LOGIN',
+                  'password': 'YOUR_EPICOR_PASSWORD'
                   }
                   ]
                 
@@ -17,6 +29,9 @@
     </Setting>
     <Setting Name="epicorClientPath" Type="System.String" Scope="Application">
       <Value Profile="(Default)">C:\Epicor\ERP10.0Client\Client</Value>
+    </Setting>
+    <Setting Name="epicorConfigName" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
     </Setting>
   </Settings>
 </SettingsFile>

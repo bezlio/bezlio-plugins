@@ -22,14 +22,5 @@ namespace Office365.Properties {
                 return defaultInstance;
             }
         }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string LocalFileStorage {
-            get {
-                return ((string)(this["LocalFileStorage"]));
-            }
-        }
     }
 }

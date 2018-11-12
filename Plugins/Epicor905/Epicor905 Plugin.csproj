@@ -75,6 +75,7 @@
     <Compile Include="Config.cs" />
     <Compile Include="Epicor905.cs" />
     <Compile Include="EpicorConnection.cs" />
+    <Compile Include="HelperMethods\Customer\HelperMethods.cs" />
     <Compile Include="HelperMethods\JobAdjustment\HelperMethods.cs" />
     <Compile Include="HelperMethods\Labor\HelperMethods.cs" />
     <Compile Include="HelperMethods\Materials\HelperMethods.cs" />
