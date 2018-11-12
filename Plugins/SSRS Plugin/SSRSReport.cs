@@ -19,9 +19,9 @@ namespace bezlio.rdb.plugins
     class SSRSReport
     {
         
-        public object GetParameters(string folderPath, string reportName)
+        public object GetParameters(string reportPath)
         {
-            string reportPath = folderPath + "/" + reportName;
+            //string reportPath = folderPath + "/" + reportName;
             string historyID = null;
 
             ExecutionInfo execInfo = new ExecutionInfo();
@@ -45,11 +45,11 @@ namespace bezlio.rdb.plugins
             return parameters;
         }
 
-        public byte[] GetAsPDF(string folderPath, string reportName)
+        public byte[] GetAsPDF(string reportPath)
         {
             byte[] result = null;
 
-            string reportPath = folderPath + "/" + reportName;
+            //string reportPath = folderPath + "/" + reportName;
             string format = "HTML4.0";
             string historyID = null;
             string devInfo = @"<DeviceInfo><Toolbar>False</Toolbar></DeviceInfo>";
