@@ -79,7 +79,7 @@ namespace bezlio.rdb.plugins
             {
                 result += connection.ConnectionName + ",";
             }
-            result.TrimEnd(',');
+            result.TrimEnd(','); 
             result += "]";
             return result;
         }
@@ -229,7 +229,7 @@ namespace bezlio.rdb.plugins
                     else
                     {
                         bo.GetType().GetMethod(request.BOMethodName.ToString()).Invoke(bo, parameters);
-                        response.Data = JsonConvert.SerializeObject("Update Successful");
+                        response.Data = JsonConvert.SerializeObject("Update Successful");                        
                     }
 
 

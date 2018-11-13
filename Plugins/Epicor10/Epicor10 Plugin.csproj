@@ -62,12 +62,16 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="wwScripting">
+      <HintPath>G:\wwScripting.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Common.cs" />
     <Compile Include="Config.cs" />
     <Compile Include="Epicor10.cs" />
     <Compile Include="EpicorConnection.cs" />
+    <Compile Include="HelperMethods\Customer\HelperMethods.cs" />
     <Compile Include="HelperMethods\JobAdjustment\HelperMethods.cs" />
     <Compile Include="HelperMethods\Labor\HelperMethods.cs" />
     <Compile Include="HelperMethods\Materials\HelperMethods.cs" />
