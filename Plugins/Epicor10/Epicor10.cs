@@ -37,7 +37,6 @@ namespace bezlio.rdb.plugins
         }
     }
 
-
     public class Epicor10
     {
         public static object GetArgs()
@@ -130,14 +129,33 @@ namespace bezlio.rdb.plugins
                 object bo = Common.GetBusinessObject(epicorConn, "DynamicQuery", ref response);
                 object query = Common.GetBusinessObjectDataSet("DynamicQuery", "Ice.BO.QueryExecutionDataSet", ref response);
 
+                // Load the available parameters
+                DataSet paramDS = bo.GetType().GetMethod("GetQueryExecutionParametersByID").Invoke(bo, new object[] { request.BaqId }) as DataSet;
+
                 // Fill in the parameters
                 foreach (var p in request.Parameters)
                 {
-                    ((DataSet)query).Tables["ExecutionParameter"].Rows.Add(new object[] { p.Key, p.Value, "String", false, null, "A", null });
+                    string valueType = "string";
+
+                    foreach(DataRow dr in paramDS.Tables["ExecutionParameter"].Select("ParameterID = '" + p.Key + "'"))
+                    {
+                        valueType = dr["ValueType"] as string;
+                    }
+
+                    DataRow newRow = (query as DataSet).Tables["ExecutionParameter"].NewRow();
+
+                    newRow["ParameterID"] = p.Key;
+                    newRow["ParameterValue"] = p.Value;
+                    newRow["ValueType"] = valueType;
+                    newRow["IsEmpty"] = false;
+                    newRow["RowMod"] = "A";
+
+                    ((DataSet)query).Tables["ExecutionParameter"].Rows.Add(newRow);
                 }
 
                 DataSet ds = (DataSet)bo.GetType().GetMethod("ExecuteByID").Invoke(bo, new object[] { request.BaqId, query });
                 response.Data = JsonConvert.SerializeObject(ds.Tables["Results"]);
+                //response.Data = JsonConvert.SerializeObject(query);
 
             }
             catch (Exception ex)
