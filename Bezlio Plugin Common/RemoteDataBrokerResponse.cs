@@ -130,7 +130,7 @@ namespace bezlio.rdb
             }
         }
 
-        [JsonProperty(PropertyName = "encryptKey")]
+        [JsonIgnore]
         public string EncryptKey { get; set; }
 
         [JsonProperty(PropertyName = "requestId")]
