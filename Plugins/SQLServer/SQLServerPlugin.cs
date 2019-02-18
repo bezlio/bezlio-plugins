@@ -79,7 +79,7 @@ namespace bezlio.rdb.plugins
                 if (Directory.Exists(context.LocationPath))
                 {
                     var ext = new List<string> { ".sql" };
-                    var contentFiles = Directory.GetFiles(context.LocationPath, "*.*", SearchOption.AllDirectories).Where(s => ext.Contains(Path.GetExtension(s)));
+                    var contentFiles = Directory.GetFiles(context.LocationPath, "*.*", SearchOption.AllDirectories).Where(s => ext.Contains(Path.GetExtension(s.ToLower())));
                     context.ContentFileNames = new List<string>();
 
                     foreach (string fileName in contentFiles)
@@ -396,7 +396,7 @@ namespace bezlio.rdb.plugins
 
                 //WriteDebugLog("Connection Received");
 
-                int rowsAffected = await executeNonQuery(sqlConn, sql, null);
+                int rowsAffected = await executeNonQuery(sqlConn, sql, request.Parameters);
 
                 //WriteDebugLog("Query Executed");
 
@@ -657,7 +657,7 @@ namespace bezlio.rdb.plugins
 #pragma warning disable 1998
         private async static Task<DataSet> executeQuery(object _connection,
                                     string _sql, List<KeyValuePair<string, string>> spParams, bool storedProcedure)
-        {
+        {            
             // TODO: Make this actually async
             object oCommand;
             object oAdapter;
@@ -682,7 +682,17 @@ namespace bezlio.rdb.plugins
 
                         command.CommandText = _sql;
                         oAdapter = getAdapter("SQL Server", oCommand);
-                        ((SqlDataAdapter)oAdapter).Fill(ds);
+                        try
+                        {
+                            ((SqlDataAdapter)oAdapter).Fill(ds);
+                        }
+                        catch(Exception ex)
+                        {
+                            dt.Columns.Add("Data", typeof(string));
+
+                            dt.Rows.Add(new object[] { _sql });
+                            dt.Rows.Add(new object[] { JsonConvert.SerializeObject(command.Parameters) });
+                        }
                         //((SqlCommand)oCommand).Connection.Close();
                     }
                     //((SqlCommand)oCommand).Connection = (SqlConnection)_connection;
@@ -749,9 +759,16 @@ namespace bezlio.rdb.plugins
                     if (m.Groups[3].Value.IndexOf('%') > -1)
                         param = new KeyValuePair<string, string>(param.Key, param.Value + "%");
 
-                    newParams.Add(param);
+                    if (newParams.IndexOf(param) == -1)
+                        newParams.Add(param);
                 }
             }
+
+            //lastly, make sure we didn't lose any of the originals
+            foreach (var param in parameters)
+                if (param.Key.StartsWith("@"))
+                    if (newParams.IndexOf(param) == -1)
+                        newParams.Add(param);
 
             return newParams;
         }
@@ -765,7 +782,12 @@ namespace bezlio.rdb.plugins
                 if (!parameter.Key.StartsWith("@")) //if the parameter name doesn't contain the "@" symbol, we will convert it to the proper parameter type
                     useKey = "@" + parameter.Key;
 
-                string value = parameter.Value.ToString().Replace("'", "''");
+
+                try { command.Parameters.AddWithValue(parameter.Key, parameter.Value); }
+                catch { }
+
+                ///AS - All of this stuff is actually causing more problems than it's worth, as SQL is able to basically handle just about anything so long as it knows what to do with it
+                /*string value = parameter.Value.ToString().Replace("'", "''");
                 double number;
                 SqlParameter param;
 
@@ -781,7 +803,12 @@ namespace bezlio.rdb.plugins
                 }
 
                 param.Direction = ParameterDirection.Input;
-                command.Parameters.Add(param);
+
+                try //this is to handle duplicates
+                {
+                    command.Parameters.Add(param);
+                }
+                catch { }*/
             }
         }
 #pragma warning restore 1998

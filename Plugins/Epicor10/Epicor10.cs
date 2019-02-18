@@ -16,11 +16,15 @@ namespace bezlio.rdb.plugins
         public string Company { get; set; }
         public string BOName { get; set; }
         public string BOMethodName { get; set; }
+        public string overrideUserName { get; set; }
+        public string overridePassword { get; set; }
         public List<KeyValuePair<string, string>> Parameters { get; set; }
 
         public Epicor10DataModel()
         {
             Parameters = new List<KeyValuePair<string, string>>();
+            overridePassword = "";
+            overrideUserName = "";
         }
     }
 
@@ -175,6 +179,22 @@ namespace bezlio.rdb.plugins
 
         }
 
+        private object myTest(object Memo_EPIC06)
+        {
+            object bo = Memo_EPIC06;
+					DataSet memoDS = bo.GetType().GetMethod("GetByID").Invoke(bo, new object[] {"customer",
+  						"Erp",
+						Guid.Parse("' + bezl.shared.selectedCustomer.SysRowID + '"),
+  						"' + bezl.shared.selectedCustomer.Id.toString() + '",
+						"",
+						"",
+  						DateTime.Parse("' + bezl.shared.selectedNote.MemoDate.toString() + '"),
+						38}) as DataSet;
+  					memoDS.Tables["Memo"].Rows[0].Delete();
+					bo.GetType().GetMethod("Update").Invoke(bo, new object[] { memoDS });
+					return memoDS;
+        }
+
         // This method allows you to execute any Epicor BO method.  This is helpful for when you want to call a
         // simple BO method, but can be tedious for transactions that require several BO calls chained together.
         // In order to make these sorts of transactions easier to call in BRDB, see HelperMethods subfolders for
@@ -188,7 +208,7 @@ namespace bezlio.rdb.plugins
             RemoteDataBrokerResponse response = Common.GetResponseObject(rdbRequest.RequestId, rdbRequest.Compress);
 
             // Establish a connection to Epicor
-            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response);
+            object epicorConn = Common.GetEpicorConnection(request.Connection, request.Company, ref response, "", request.overrideUserName, request.overridePassword);
 
             if (epicorConn != null)
             {
@@ -256,7 +276,7 @@ namespace bezlio.rdb.plugins
                 {
                     if (!string.IsNullOrEmpty(ex.InnerException.ToString()))
                     {
-                        response.ErrorText += ex.InnerException.ToString();
+                        response.ErrorText += ex.InnerException.Message.ToString();
                     }
 
                     response.Error = true;
@@ -268,5 +288,6 @@ namespace bezlio.rdb.plugins
             // Return response object
             return response;
         }
+        
     }
 }

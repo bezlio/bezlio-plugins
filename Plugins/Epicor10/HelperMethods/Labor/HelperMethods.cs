@@ -440,7 +440,7 @@ namespace bezlio.rdb.plugins.HelperMethods.Labor
                                 foreach (DataRow drPart in ((DataSet)ds).Tables["LaborPart"].Select("LaborDtlSeq = " + dr["LaborDtlSeq"]))
                                 {
                                     drPart["PartQty"] = laborDtl["LaborQty"];
-                                    drPart["RowMod"] = "U";
+                                    drPart["RowMod"] = "U";                                    
                                 }
 
                             }

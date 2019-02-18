@@ -16,7 +16,7 @@ namespace bezlio.rdb.plugins
             return response;
         }
 
-        public static object GetEpicorConnection(string connectionName, string companyId, ref RemoteDataBrokerResponse response, string plantId = "")
+        public static object GetEpicorConnection(string connectionName, string companyId, ref RemoteDataBrokerResponse response, string plantId = "", string userName = "", string passWord = "")
         {
             try
             {
@@ -25,13 +25,19 @@ namespace bezlio.rdb.plugins
 
                 if (connection != null)
                 {
+                    if (userName == null || userName.Length == 0)
+                        userName = connection.UserName;
+
+                    if (passWord == null || passWord.Length == 0)
+                        passWord = connection.Password;
+
                     string clientPath = Config.GetClientPath(ref response);
                     string configPath = clientPath + @"\config\" + Config.GetConfigName(ref response);
 
                     Assembly sessionAssembly = null;
 
                     sessionAssembly = Assembly.LoadFrom(clientPath + @"\Ice.Core.Session.dll");
-                    epicorConn = Activator.CreateInstance(sessionAssembly.GetType("Ice.Core.Session"), new object[] { connection.UserName, connection.Password, connection.AppServerUrl, null, configPath });
+                    epicorConn = Activator.CreateInstance(sessionAssembly.GetType("Ice.Core.Session"), new object[] { userName, passWord, connection.AppServerUrl, null, configPath });
                     epicorConn.GetType().InvokeMember("CompanyID",
                                  BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
                                  Type.DefaultBinder, epicorConn, new Object[] { companyId });
