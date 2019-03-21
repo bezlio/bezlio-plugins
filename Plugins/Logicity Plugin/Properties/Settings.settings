@@ -1,0 +1,24 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="bezlio.rdb.plugins.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="logicityClientPath" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">C:\Program Files (x86)\SaberLogic\Logicity</Value>
+    </Setting>
+    <Setting Name="logicityFileLocations" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">
+                  [
+                  {
+                  'locationName': 'Friendly Name',
+                  'locationPath': 'C:\\Path\\RRDs\\'
+                  },
+                  {
+                  'locationName': 'Another Friendly Name',
+                  'locationPath': 'C:\\Different Path\\RRDs\\'
+                  }
+                  ]
+                
+</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
