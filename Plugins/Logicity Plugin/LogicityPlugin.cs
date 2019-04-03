@@ -179,9 +179,9 @@ namespace bezlio.rdb.plugins
             args += "\"" + filepath + "\" ";
             if (request.Replacement != "")
             {
-                args += "\"" + request.Replacement + "\"";
+                args += request.Replacement;
             }
-            
+
 
             // Now we actually call it
             string filename = "";
