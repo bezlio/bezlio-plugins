@@ -63,7 +63,7 @@
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
     <Reference Include="wwScripting">
-      <HintPath>G:\wwScripting.dll</HintPath>
+      <HintPath>.\wwScripting.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

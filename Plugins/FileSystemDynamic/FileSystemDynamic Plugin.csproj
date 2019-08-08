@@ -66,7 +66,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Bezlio Plugin Common\Bezlio Plugin Common.csproj">
+    <ProjectReference Include="..\..\Bezlio Plugin Common\Bezlio Plugin Common.csproj">
       <Project>{89966888-91fd-40f9-824c-f8b87b0207fd}</Project>
       <Name>Bezlio Plugin Common</Name>
     </ProjectReference>
