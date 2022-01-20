@@ -20,7 +20,7 @@ namespace bezlio.Logging
 
         public static BezlioLog Instance { get { return lazy.Value; } }
 
-        private BezlioLog()
+        public BezlioLog()
         {
             
         }
