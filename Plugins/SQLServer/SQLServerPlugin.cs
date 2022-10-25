@@ -292,7 +292,7 @@ namespace bezlio.rdb.plugins
 
                 // Perform any replacements on passed variables
                 if (request.Parameters != null && request.Parameters.Count > 0)
-                    request.Parameters = FillQueryParameters(ref sql, request.Parameters);
+                    FillQueryParameters(ref sql, request.Parameters);
 
                 // Now obtain a SQL connection
                 object sqlConn = getConnection("SQL Server"
@@ -767,6 +767,16 @@ namespace bezlio.rdb.plugins
 
                 string value = parameter.Value.ToString().Replace("'", "''");
                 double number;
+
+                // See if we've already defined the SQL parameter
+                foreach (SqlParameter p in command.Parameters)
+                {
+                    if (p.ParameterName == useKey)
+                    {
+                        // We dont want to add it again
+                        return;
+                    }
+                }
                 SqlParameter param;
 
                 if (!(value.StartsWith("\"") && value.EndsWith("\"")) && double.TryParse(value, out number))
